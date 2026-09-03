@@ -1,0 +1,50 @@
+{
+  "assessment_at": "2026-09-02T23:59:59+00:00",
+  "generated_tables": [
+    "product_attributes",
+    "return_requests",
+    "return_evidence",
+    "return_inspections",
+    "return_logistics",
+    "return_operational_costs",
+    "synthetic_scenarios",
+    "fraud_labels"
+  ],
+  "generator_version": "rg-synth-v1.0.2",
+  "rules": [
+    "Real The Look customers/products/order_items remain the foundation.",
+    "Source tables are never mutated.",
+    "Historical source return reasons are never fabricated.",
+    "Synthetic records are clearly marked synthetic_demo.",
+    "Fraud ground truth is evaluation-only and not a risk input.",
+    "Anonymous events are not used for customer attribution.",
+    "Operational timestamps are ReturnGuard-created.",
+    "Gemini findings are not generated here; Gemini runs later on supplied images."
+  ],
+  "scenario_counts": {
+    "S01": 5,
+    "S02": 5,
+    "S03": 5,
+    "S04": 4,
+    "S05": 4,
+    "S06": 5,
+    "S07": 5,
+    "S08": 4,
+    "S09": 4,
+    "S10": 5,
+    "S11": 5,
+    "S12": 5,
+    "S13": 4,
+    "S14": 4
+  },
+  "seed": 20260903,
+  "source_dataset": "bigquery-public-data.thelook_ecommerce",
+  "source_tables": [
+    "bigquery-public-data.thelook_ecommerce.users",
+    "bigquery-public-data.thelook_ecommerce.orders",
+    "bigquery-public-data.thelook_ecommerce.order_items",
+    "bigquery-public-data.thelook_ecommerce.products",
+    "bigquery-public-data.thelook_ecommerce.events"
+  ],
+  "total_cases": 64
+}

@@ -1,0 +1,65 @@
+scenario_id,scenario_type,return_id,seed,generator_version,description,source_type
+S01,Honest normal return,RTN-S01-001,20260903,rg-synth-v1.0.2,Honest normal return,synthetic_demo
+S01,Honest normal return,RTN-S01-002,20260903,rg-synth-v1.0.2,Honest normal return,synthetic_demo
+S01,Honest normal return,RTN-S01-003,20260903,rg-synth-v1.0.2,Honest normal return,synthetic_demo
+S01,Honest normal return,RTN-S01-004,20260903,rg-synth-v1.0.2,Honest normal return,synthetic_demo
+S01,Honest normal return,RTN-S01-005,20260903,rg-synth-v1.0.2,Honest normal return,synthetic_demo
+S02,Legitimate heavy returner,RTN-S02-001,20260903,rg-synth-v1.0.2,Legitimate heavy returner,synthetic_demo
+S02,Legitimate heavy returner,RTN-S02-002,20260903,rg-synth-v1.0.2,Legitimate heavy returner,synthetic_demo
+S02,Legitimate heavy returner,RTN-S02-003,20260903,rg-synth-v1.0.2,Legitimate heavy returner,synthetic_demo
+S02,Legitimate heavy returner,RTN-S02-004,20260903,rg-synth-v1.0.2,Legitimate heavy returner,synthetic_demo
+S02,Legitimate heavy returner,RTN-S02-005,20260903,rg-synth-v1.0.2,Legitimate heavy returner,synthetic_demo
+S03,Merchant-fault damaged return,RTN-S03-001,20260903,rg-synth-v1.0.2,Merchant-fault damaged return,synthetic_demo
+S03,Merchant-fault damaged return,RTN-S03-002,20260903,rg-synth-v1.0.2,Merchant-fault damaged return,synthetic_demo
+S03,Merchant-fault damaged return,RTN-S03-003,20260903,rg-synth-v1.0.2,Merchant-fault damaged return,synthetic_demo
+S03,Merchant-fault damaged return,RTN-S03-004,20260903,rg-synth-v1.0.2,Merchant-fault damaged return,synthetic_demo
+S03,Merchant-fault damaged return,RTN-S03-005,20260903,rg-synth-v1.0.2,Merchant-fault damaged return,synthetic_demo
+S04,Wrong item shipped,RTN-S04-001,20260903,rg-synth-v1.0.2,Wrong item shipped,synthetic_demo
+S04,Wrong item shipped,RTN-S04-002,20260903,rg-synth-v1.0.2,Wrong item shipped,synthetic_demo
+S04,Wrong item shipped,RTN-S04-003,20260903,rg-synth-v1.0.2,Wrong item shipped,synthetic_demo
+S04,Wrong item shipped,RTN-S04-004,20260903,rg-synth-v1.0.2,Wrong item shipped,synthetic_demo
+S05,High-value legitimate return,RTN-S05-001,20260903,rg-synth-v1.0.2,High-value legitimate return,synthetic_demo
+S05,High-value legitimate return,RTN-S05-002,20260903,rg-synth-v1.0.2,High-value legitimate return,synthetic_demo
+S05,High-value legitimate return,RTN-S05-003,20260903,rg-synth-v1.0.2,High-value legitimate return,synthetic_demo
+S05,High-value legitimate return,RTN-S05-004,20260903,rg-synth-v1.0.2,High-value legitimate return,synthetic_demo
+S06,Empty box / missing item,RTN-S06-001,20260903,rg-synth-v1.0.2,Empty box / missing item,synthetic_demo
+S06,Empty box / missing item,RTN-S06-002,20260903,rg-synth-v1.0.2,Empty box / missing item,synthetic_demo
+S06,Empty box / missing item,RTN-S06-003,20260903,rg-synth-v1.0.2,Empty box / missing item,synthetic_demo
+S06,Empty box / missing item,RTN-S06-004,20260903,rg-synth-v1.0.2,Empty box / missing item,synthetic_demo
+S06,Empty box / missing item,RTN-S06-005,20260903,rg-synth-v1.0.2,Empty box / missing item,synthetic_demo
+S07,Serial/product swap,RTN-S07-001,20260903,rg-synth-v1.0.2,Serial/product swap,synthetic_demo
+S07,Serial/product swap,RTN-S07-002,20260903,rg-synth-v1.0.2,Serial/product swap,synthetic_demo
+S07,Serial/product swap,RTN-S07-003,20260903,rg-synth-v1.0.2,Serial/product swap,synthetic_demo
+S07,Serial/product swap,RTN-S07-004,20260903,rg-synth-v1.0.2,Serial/product swap,synthetic_demo
+S07,Serial/product swap,RTN-S07-005,20260903,rg-synth-v1.0.2,Serial/product swap,synthetic_demo
+S08,Missing accessories/components,RTN-S08-001,20260903,rg-synth-v1.0.2,Missing accessories/components,synthetic_demo
+S08,Missing accessories/components,RTN-S08-002,20260903,rg-synth-v1.0.2,Missing accessories/components,synthetic_demo
+S08,Missing accessories/components,RTN-S08-003,20260903,rg-synth-v1.0.2,Missing accessories/components,synthetic_demo
+S08,Missing accessories/components,RTN-S08-004,20260903,rg-synth-v1.0.2,Missing accessories/components,synthetic_demo
+S09,False damage claim / conflicting visual evidence,RTN-S09-001,20260903,rg-synth-v1.0.2,False damage claim / conflicting visual evidence,synthetic_demo
+S09,False damage claim / conflicting visual evidence,RTN-S09-002,20260903,rg-synth-v1.0.2,False damage claim / conflicting visual evidence,synthetic_demo
+S09,False damage claim / conflicting visual evidence,RTN-S09-003,20260903,rg-synth-v1.0.2,False damage claim / conflicting visual evidence,synthetic_demo
+S09,False damage claim / conflicting visual evidence,RTN-S09-004,20260903,rg-synth-v1.0.2,False damage claim / conflicting visual evidence,synthetic_demo
+S10,Wardrobing / repeated short-duration usage pattern,RTN-S10-001,20260903,rg-synth-v1.0.2,Wardrobing / repeated short-duration usage pattern,synthetic_demo
+S10,Wardrobing / repeated short-duration usage pattern,RTN-S10-002,20260903,rg-synth-v1.0.2,Wardrobing / repeated short-duration usage pattern,synthetic_demo
+S10,Wardrobing / repeated short-duration usage pattern,RTN-S10-003,20260903,rg-synth-v1.0.2,Wardrobing / repeated short-duration usage pattern,synthetic_demo
+S10,Wardrobing / repeated short-duration usage pattern,RTN-S10-004,20260903,rg-synth-v1.0.2,Wardrobing / repeated short-duration usage pattern,synthetic_demo
+S10,Wardrobing / repeated short-duration usage pattern,RTN-S10-005,20260903,rg-synth-v1.0.2,Wardrobing / repeated short-duration usage pattern,synthetic_demo
+S11,Coordinated abuse / correlated cases,RTN-S11-001,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
+S11,Coordinated abuse / correlated cases,RTN-S11-002,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
+S11,Coordinated abuse / correlated cases,RTN-S11-003,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
+S11,Coordinated abuse / correlated cases,RTN-S11-004,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
+S11,Coordinated abuse / correlated cases,RTN-S11-005,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
+S12,Product-quality issue,RTN-S12-001,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
+S12,Product-quality issue,RTN-S12-002,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
+S12,Product-quality issue,RTN-S12-003,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
+S12,Product-quality issue,RTN-S12-004,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
+S12,Product-quality issue,RTN-S12-005,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
+S13,High-cost legitimate return,RTN-S13-001,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
+S13,High-cost legitimate return,RTN-S13-002,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
+S13,High-cost legitimate return,RTN-S13-003,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
+S13,High-cost legitimate return,RTN-S13-004,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
+S14,Mixed / ambiguous evidence,RTN-S14-001,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo
+S14,Mixed / ambiguous evidence,RTN-S14-002,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo
+S14,Mixed / ambiguous evidence,RTN-S14-003,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo
+S14,Mixed / ambiguous evidence,RTN-S14-004,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo

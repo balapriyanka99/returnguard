@@ -61,7 +61,7 @@ import pandas as pd
 from google.cloud import bigquery
 
 
-GENERATOR_VERSION = "rg-synth-v1.0.0"
+GENERATOR_VERSION = "rg-synth-v1.0.2"
 SOURCE_DATASET = "bigquery-public-data.thelook_ecommerce"
 
 SCENARIO_COUNTS = {
@@ -426,7 +426,7 @@ def make_case(
     reason, responsibility = REASONS[scenario_id]
 
     # Operational lifecycle timestamps are deliberately created by ReturnGuard.
-    requested = assessment_at - timedelta(days=rng.randint(1, 12), hours=rng.randint(0, 20))
+    requested = assessment_at - timedelta(days=rng.randint(7, 12), hours=rng.randint(0, 20))
     pickup = requested + timedelta(hours=rng.randint(12, 48))
     received = pickup + timedelta(days=rng.randint(1, 4))
 
@@ -892,11 +892,25 @@ def validate(
     assert "fraud_type" not in requests.columns
 
     # Provenance.
+    # Most synthetic operational tables use source_type='synthetic_demo'.
+    # fraud_labels is intentionally different: it is an evaluation-only
+    # answer key and uses source='controlled_demo_evaluation_only' instead.
     for df_name, df in {**tables, "product_attributes": product_attributes}.items():
         if len(df) == 0:
             continue
         assert "generator_version" in df.columns, f"{df_name} missing generator_version"
-        assert "source_type" in df.columns, f"{df_name} missing source_type"
+
+        if df_name == "fraud_labels":
+            assert "source" in df.columns, "fraud_labels missing source"
+            assert (
+                df["source"] == "controlled_demo_evaluation_only"
+            ).all(), "fraud_labels source must be evaluation-only"
+            assert "scenario_id" in df.columns, "fraud_labels missing scenario_id"
+        else:
+            assert "source_type" in df.columns, f"{df_name} missing source_type"
+            assert (
+                df["source_type"] == "synthetic_demo"
+            ).all(), f"{df_name} contains non-synthetic source_type"
 
     # Future leakage: generated operational observations must not be after assessment_at.
     assessment = pd.to_datetime(requests["assessment_at"], utc=True)
@@ -914,7 +928,7 @@ def validate(
         req = pd.to_datetime(joined["requested_at"], utc=True)
         ass = pd.to_datetime(joined["assessment_at"], utc=True)
         assert (inspected >= req).all()
-        assert (inspected <= ass + pd.Timedelta(days=1)).all()
+        assert (inspected <= ass).all()
 
     # Physical scenario sanity checks.
     insp = tables["return_inspections"]
