@@ -105,10 +105,11 @@ V2_ADDITIONAL_SCENARIO_COUNTS: Dict[str, int] = {
 # Frozen V1 provenance retained outside the active demo dataset.  These source
 # products no longer meet the live S12 return-history contract, so their stable
 # IDs must never be materialized into an active output on ordinary V2 runs.
-LEGACY_INELIGIBLE_RETURN_IDS: Set[str] = {
+RETIRED_ACTIVE_RETURN_IDS: Tuple[str, ...] = (
     "RTN-S12-001",
     "RTN-S12-005",
-}
+)
+LEGACY_INELIGIBLE_RETURN_IDS: Set[str] = set(RETIRED_ACTIVE_RETURN_IDS)
 
 SCENARIO_COUNTS: Dict[str, int] = {
     **BASE_SCENARIO_COUNTS,
@@ -1432,6 +1433,43 @@ def apply_v2_contract_migrations(tables: Dict[str, pd.DataFrame]) -> None:
     costs.loc[costs_mask, "reverse_logistics_cost"] = costs.loc[costs_mask, "reverse_logistics_cost"].clip(lower=50.0)
 
 
+def return_grained_table_names() -> List[str]:
+    """Derive cleanup scope from schemas; product-grained tables are excluded."""
+    return [
+        table_name
+        for table_name, schema in BQ_SCHEMAS.items()
+        if any(column_name == "return_id" for column_name, _ in schema)
+    ]
+
+
+def cleanup_retired_active_returns(client: bigquery.Client, dataset_id: str) -> List[str]:
+    """Delete only explicitly retired return IDs from return-grained tables.
+
+    This is intentionally separate from ``upsert_table``.  Missing tables and
+    repeated execution are harmless, and product_attributes is not in the
+    schema-derived scope because it has no return_id column.
+    """
+    retired = list(RETIRED_ACTIVE_RETURN_IDS)
+    cleaned_tables: List[str] = []
+    for table_name in return_grained_table_names():
+        table_ref = f"{client.project}.{dataset_id}.{table_name}"
+        try:
+            client.get_table(table_ref)
+        except Exception:
+            continue
+
+        query = f"""
+        DELETE FROM `{table_ref}`
+        WHERE return_id IN UNNEST(@retired_return_ids)
+        """
+        config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ArrayQueryParameter("retired_return_ids", "STRING", retired)]
+        )
+        client.query(query, job_config=config).result()
+        cleaned_tables.append(table_name)
+    return cleaned_tables
+
+
 def ensure_dataset(client: bigquery.Client, dataset_id: str) -> None:
     dataset = bigquery.Dataset(f"{client.project}.{dataset_id}")
     dataset.location = "US"
@@ -1945,6 +1983,8 @@ def main() -> None:
     if args.load_bigquery:
         print(f"\nIncrementally loading ReturnGuard dataset {args.project_id}.{args.dataset} via MERGE ...")
         ensure_dataset(client, args.dataset)
+        cleaned = cleanup_retired_active_returns(client, args.dataset)
+        print(f"Retired active return cleanup applied to: {cleaned or 'no existing return-grained tables'}")
 
         upsert_table(client, args.dataset, "product_attributes", final_prod_df, PRIMARY_KEYS["product_attributes"])
         for name, df in final_tables.items():
