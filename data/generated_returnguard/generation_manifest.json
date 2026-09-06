@@ -1,5 +1,6 @@
 {
   "assessment_at": "2026-09-02T23:59:59+00:00",
+  "dataset_status": "ACTIVE",
   "generated_tables": [
     "product_attributes",
     "return_requests",
@@ -8,20 +9,38 @@
     "return_logistics",
     "return_operational_costs",
     "synthetic_scenarios",
-    "fraud_labels"
+    "fraud_labels",
+    "synthetic_network_links"
   ],
-  "generator_version": "rg-synth-v1.0.2",
+  "generator_version": "rg-synth-v2.0.0",
+  "legacy_provenance_path": "data/legacy_returnguard_v1_ineligible_s12/legacy_v1_s12_records.json",
+  "legacy_return_ids": [
+    "RTN-S12-001",
+    "RTN-S12-005"
+  ],
+  "previous_version": "rg-synth-v1.0.2",
   "rules": [
     "Real The Look customers/products/order_items remain the foundation.",
     "Source tables are never mutated.",
     "Historical source return reasons are never fabricated.",
+    "Cancelled orders are excluded from historical baseline metrics.",
+    "Known ineligible V1 S12 records are retained only in the legacy provenance archive, not active output.",
     "Synthetic records are clearly marked synthetic_demo.",
     "Fraud ground truth is evaluation-only and not a risk input.",
     "Anonymous events are not used for customer attribution.",
     "Operational timestamps are ReturnGuard-created.",
-    "Gemini findings are not generated here; Gemini runs later on supplied images."
+    "Gemini findings are not generated here; Gemini runs later on supplied images.",
+    "Incremental BigQuery loading uses safe MERGE upsert without truncate."
   ],
   "scenario_counts": {
+    "M01": 2,
+    "M02": 2,
+    "M03": 2,
+    "M04": 2,
+    "M05": 2,
+    "M06": 2,
+    "M07": 2,
+    "M08": 2,
     "S01": 5,
     "S02": 5,
     "S03": 5,
@@ -33,7 +52,8 @@
     "S09": 4,
     "S10": 5,
     "S11": 5,
-    "S12": 5,
+    "S12": 3,
+    "S12V2": 2,
     "S13": 4,
     "S14": 4
   },
@@ -46,5 +66,5 @@
     "bigquery-public-data.thelook_ecommerce.products",
     "bigquery-public-data.thelook_ecommerce.events"
   ],
-  "total_cases": 64
+  "total_cases": 80
 }

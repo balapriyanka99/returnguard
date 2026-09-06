@@ -1,0 +1,18 @@
+{
+  "classification": "LEGACY_V1",
+  "source_commit": "2b125d815740047cb126d777066f39cdc1a874bb",
+  "ineligible_reason": "Current source snapshot has zero historical returned items before assessment_at for the anchored product.",
+  "return_ids": ["RTN-S12-001", "RTN-S12-005"],
+  "return_requests": [
+    {"return_id":"RTN-S12-001","scenario_id":"S12","order_item_id":269,"order_id":185,"user_id":135,"product_id":24767,"requested_at":"2026-08-22T09:59:59+00:00","reason":"defective","responsibility":"merchant_fault","assessment_at":"2026-09-02T23:59:59+00:00","source_type":"synthetic_demo","source_record_id":"269","generator_version":"rg-synth-v1.0.2"},
+    {"return_id":"RTN-S12-005","scenario_id":"S12","order_item_id":364,"order_id":250,"user_id":191,"product_id":19603,"requested_at":"2026-08-26T06:59:59+00:00","reason":"defective","responsibility":"merchant_fault","assessment_at":"2026-09-02T23:59:59+00:00","source_type":"synthetic_demo","source_record_id":"364","generator_version":"rg-synth-v1.0.2"}
+  ],
+  "child_record_ids": {
+    "fraud_labels": ["RTN-S12-001", "RTN-S12-005"],
+    "return_logistics": ["RTN-S12-001", "RTN-S12-005"],
+    "return_operational_costs": ["RTN-S12-001", "RTN-S12-005"],
+    "synthetic_scenarios": ["RTN-S12-001", "RTN-S12-005"],
+    "return_inspections": ["RTN-S12-001", "RTN-S12-005"],
+    "return_evidence": ["E-RTN-S12-001-CUST-01", "E-RTN-S12-001-WH-01", "E-RTN-S12-005-CUST-01", "E-RTN-S12-005-WH-01"]
+  }
+}

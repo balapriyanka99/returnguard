@@ -1,0 +1,809 @@
+{
+  "level_1_structural": true,
+  "level_2_relational": true,
+  "level_3_temporal": true,
+  "level_4_semantic": true,
+  "level_5_provenance": true,
+  "case_validation_results": [
+    {
+      "return_id": "RTN-S01-001",
+      "scenario_id": "S01",
+      "user_id": 567,
+      "order_item_id": 1064,
+      "product_id": 21665,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior / Baseline",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S01-002",
+      "scenario_id": "S01",
+      "user_id": 544,
+      "order_item_id": 1018,
+      "product_id": 16268,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior / Baseline",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S01-003",
+      "scenario_id": "S01",
+      "user_id": 271,
+      "order_item_id": 521,
+      "product_id": 10230,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior / Baseline",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S01-004",
+      "scenario_id": "S01",
+      "user_id": 334,
+      "order_item_id": 626,
+      "product_id": 19840,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior / Baseline",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S01-005",
+      "scenario_id": "S01",
+      "user_id": 440,
+      "order_item_id": 799,
+      "product_id": 26132,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior / Baseline",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S02-001",
+      "scenario_id": "S02",
+      "user_id": 106,
+      "order_item_id": 223,
+      "product_id": 20596,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S02-002",
+      "scenario_id": "S02",
+      "user_id": 453,
+      "order_item_id": 829,
+      "product_id": 1426,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S02-003",
+      "scenario_id": "S02",
+      "user_id": 235,
+      "order_item_id": 446,
+      "product_id": 22659,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S02-004",
+      "scenario_id": "S02",
+      "user_id": 533,
+      "order_item_id": 1002,
+      "product_id": 10575,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S02-005",
+      "scenario_id": "S02",
+      "user_id": 726,
+      "order_item_id": 1339,
+      "product_id": 907,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S03-001",
+      "scenario_id": "S03",
+      "user_id": 604,
+      "order_item_id": 1129,
+      "product_id": 14423,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S03-002",
+      "scenario_id": "S03",
+      "user_id": 213,
+      "order_item_id": 402,
+      "product_id": 24995,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S03-003",
+      "scenario_id": "S03",
+      "user_id": 506,
+      "order_item_id": 941,
+      "product_id": 1348,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S03-004",
+      "scenario_id": "S03",
+      "user_id": 54,
+      "order_item_id": 122,
+      "product_id": 23343,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S03-005",
+      "scenario_id": "S03",
+      "user_id": 34,
+      "order_item_id": 71,
+      "product_id": 11450,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S04-001",
+      "scenario_id": "S04",
+      "user_id": 189,
+      "order_item_id": 360,
+      "product_id": 2413,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S04-002",
+      "scenario_id": "S04",
+      "user_id": 588,
+      "order_item_id": 1104,
+      "product_id": 27980,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S04-003",
+      "scenario_id": "S04",
+      "user_id": 618,
+      "order_item_id": 1150,
+      "product_id": 1182,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S04-004",
+      "scenario_id": "S04",
+      "user_id": 658,
+      "order_item_id": 1211,
+      "product_id": 27407,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S05-001",
+      "scenario_id": "S05",
+      "user_id": 54,
+      "order_item_id": 120,
+      "product_id": 20568,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S05-002",
+      "scenario_id": "S05",
+      "user_id": 603,
+      "order_item_id": 1128,
+      "product_id": 3681,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S05-003",
+      "scenario_id": "S05",
+      "user_id": 210,
+      "order_item_id": 391,
+      "product_id": 8528,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S05-004",
+      "scenario_id": "S05",
+      "user_id": 650,
+      "order_item_id": 1201,
+      "product_id": 1425,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S06-001",
+      "scenario_id": "S06",
+      "user_id": 300,
+      "order_item_id": 565,
+      "product_id": 23323,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Physical Finding",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S06-002",
+      "scenario_id": "S06",
+      "user_id": 149,
+      "order_item_id": 291,
+      "product_id": 20090,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Physical Finding",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S06-003",
+      "scenario_id": "S06",
+      "user_id": 481,
+      "order_item_id": 882,
+      "product_id": 20980,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Physical Finding",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S06-004",
+      "scenario_id": "S06",
+      "user_id": 559,
+      "order_item_id": 1049,
+      "product_id": 1939,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Physical Finding",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S06-005",
+      "scenario_id": "S06",
+      "user_id": 80,
+      "order_item_id": 169,
+      "product_id": 22956,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Physical Finding",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S07-001",
+      "scenario_id": "S07",
+      "user_id": 443,
+      "order_item_id": 803,
+      "product_id": 6201,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Serial Verification",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S07-002",
+      "scenario_id": "S07",
+      "user_id": 698,
+      "order_item_id": 1281,
+      "product_id": 3736,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Serial Verification",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S07-003",
+      "scenario_id": "S07",
+      "user_id": 365,
+      "order_item_id": 676,
+      "product_id": 23825,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Serial Verification",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S07-004",
+      "scenario_id": "S07",
+      "user_id": 612,
+      "order_item_id": 1147,
+      "product_id": 4504,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Serial Verification",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S07-005",
+      "scenario_id": "S07",
+      "user_id": 328,
+      "order_item_id": 614,
+      "product_id": 23784,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Serial Verification",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S08-001",
+      "scenario_id": "S08",
+      "user_id": 195,
+      "order_item_id": 370,
+      "product_id": 8231,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Completeness",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S08-002",
+      "scenario_id": "S08",
+      "user_id": 489,
+      "order_item_id": 902,
+      "product_id": 19877,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Completeness",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S08-003",
+      "scenario_id": "S08",
+      "user_id": 334,
+      "order_item_id": 625,
+      "product_id": 21196,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Completeness",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S08-004",
+      "scenario_id": "S08",
+      "user_id": 260,
+      "order_item_id": 486,
+      "product_id": 20340,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Inspection & Completeness",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S09-001",
+      "scenario_id": "S09",
+      "user_id": 626,
+      "order_item_id": 1163,
+      "product_id": 8843,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection Inconsistency",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S09-002",
+      "scenario_id": "S09",
+      "user_id": 719,
+      "order_item_id": 1319,
+      "product_id": 4988,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection Inconsistency",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S09-003",
+      "scenario_id": "S09",
+      "user_id": 276,
+      "order_item_id": 530,
+      "product_id": 1430,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection Inconsistency",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S09-004",
+      "scenario_id": "S09",
+      "user_id": 181,
+      "order_item_id": 346,
+      "product_id": 28692,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Evidence & Inspection Inconsistency",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S10-001",
+      "scenario_id": "S10",
+      "user_id": 397,
+      "order_item_id": 738,
+      "product_id": 23073,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior & Usage Context",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S10-002",
+      "scenario_id": "S10",
+      "user_id": 114,
+      "order_item_id": 230,
+      "product_id": 18950,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior & Usage Context",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S10-003",
+      "scenario_id": "S10",
+      "user_id": 391,
+      "order_item_id": 728,
+      "product_id": 10616,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior & Usage Context",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S10-004",
+      "scenario_id": "S10",
+      "user_id": 204,
+      "order_item_id": 384,
+      "product_id": 21200,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior & Usage Context",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S10-005",
+      "scenario_id": "S10",
+      "user_id": 497,
+      "order_item_id": 922,
+      "product_id": 8786,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Customer Behavior & Usage Context",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S11-001",
+      "scenario_id": "S11",
+      "user_id": 307,
+      "order_item_id": 583,
+      "product_id": 15228,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S11-002",
+      "scenario_id": "S11",
+      "user_id": 561,
+      "order_item_id": 1054,
+      "product_id": 10650,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S11-003",
+      "scenario_id": "S11",
+      "user_id": 115,
+      "order_item_id": 238,
+      "product_id": 3796,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S11-004",
+      "scenario_id": "S11",
+      "user_id": 410,
+      "order_item_id": 752,
+      "product_id": 8935,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S11-005",
+      "scenario_id": "S11",
+      "user_id": 188,
+      "order_item_id": 356,
+      "product_id": 15122,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S12-002",
+      "scenario_id": "S12",
+      "user_id": 396,
+      "order_item_id": 737,
+      "product_id": 20789,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S12-003",
+      "scenario_id": "S12",
+      "user_id": 90,
+      "order_item_id": 199,
+      "product_id": 13389,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S12-004",
+      "scenario_id": "S12",
+      "user_id": 526,
+      "order_item_id": 983,
+      "product_id": 15241,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S13-001",
+      "scenario_id": "S13",
+      "user_id": 332,
+      "order_item_id": 621,
+      "product_id": 14115,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S13-002",
+      "scenario_id": "S13",
+      "user_id": 447,
+      "order_item_id": 810,
+      "product_id": 19966,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S13-003",
+      "scenario_id": "S13",
+      "user_id": 374,
+      "order_item_id": 695,
+      "product_id": 3281,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S13-004",
+      "scenario_id": "S13",
+      "user_id": 493,
+      "order_item_id": 913,
+      "product_id": 14373,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S14-001",
+      "scenario_id": "S14",
+      "user_id": 142,
+      "order_item_id": 279,
+      "product_id": 11812,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Multi-signal Ambiguity / Manual Review",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S14-002",
+      "scenario_id": "S14",
+      "user_id": 506,
+      "order_item_id": 942,
+      "product_id": 15805,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Multi-signal Ambiguity / Manual Review",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S14-003",
+      "scenario_id": "S14",
+      "user_id": 606,
+      "order_item_id": 1132,
+      "product_id": 189,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Multi-signal Ambiguity / Manual Review",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S14-004",
+      "scenario_id": "S14",
+      "user_id": 71,
+      "order_item_id": 146,
+      "product_id": 28994,
+      "scenario_type": "SINGLE_SIGNAL",
+      "primary_capability": "Multi-signal Ambiguity / Manual Review",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M01-001",
+      "scenario_id": "M01",
+      "user_id": 616,
+      "order_item_id": 1047,
+      "product_id": 7644,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M01-002",
+      "scenario_id": "M01",
+      "user_id": 1101,
+      "order_item_id": 1944,
+      "product_id": 12831,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M02-001",
+      "scenario_id": "M02",
+      "user_id": 1258,
+      "order_item_id": 2216,
+      "product_id": 6508,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M02-002",
+      "scenario_id": "M02",
+      "user_id": 148,
+      "order_item_id": 228,
+      "product_id": 27864,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Customer Behavior",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M03-001",
+      "scenario_id": "M03",
+      "user_id": 97,
+      "order_item_id": 129,
+      "product_id": 8988,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M03-002",
+      "scenario_id": "M03",
+      "user_id": 652,
+      "order_item_id": 1121,
+      "product_id": 10908,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M04-001",
+      "scenario_id": "M04",
+      "user_id": 254,
+      "order_item_id": 428,
+      "product_id": 20207,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M04-002",
+      "scenario_id": "M04",
+      "user_id": 1550,
+      "order_item_id": 2741,
+      "product_id": 15332,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M05-001",
+      "scenario_id": "M05",
+      "user_id": 1373,
+      "order_item_id": 2416,
+      "product_id": 5056,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M05-002",
+      "scenario_id": "M05",
+      "user_id": 1216,
+      "order_item_id": 2144,
+      "product_id": 14329,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Economics",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M06-001",
+      "scenario_id": "M06",
+      "user_id": 490,
+      "order_item_id": 828,
+      "product_id": 21753,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M06-002",
+      "scenario_id": "M06",
+      "user_id": 941,
+      "order_item_id": 1670,
+      "product_id": 14325,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M07-001",
+      "scenario_id": "M07",
+      "user_id": 511,
+      "order_item_id": 860,
+      "product_id": 4003,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M07-002",
+      "scenario_id": "M07",
+      "user_id": 1414,
+      "order_item_id": 2492,
+      "product_id": 8313,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Network Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M08-001",
+      "scenario_id": "M08",
+      "user_id": 846,
+      "order_item_id": 1500,
+      "product_id": 7834,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Combined Risk Engine",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-M08-002",
+      "scenario_id": "M08",
+      "user_id": 238,
+      "order_item_id": 399,
+      "product_id": 24208,
+      "scenario_type": "MULTI_SIGNAL",
+      "primary_capability": "Combined Risk Engine",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S12V2-001",
+      "scenario_id": "S12V2",
+      "user_id": 1035,
+      "order_item_id": 1850,
+      "product_id": 11795,
+      "scenario_type": "V2_ACTIVE_DEMONSTRATION",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    },
+    {
+      "return_id": "RTN-S12V2-002",
+      "scenario_id": "S12V2",
+      "user_id": 1010,
+      "order_item_id": 1797,
+      "product_id": 12697,
+      "scenario_type": "V2_ACTIVE_DEMONSTRATION",
+      "primary_capability": "Product Intelligence",
+      "validation_status": "PASS"
+    }
+  ]
+}

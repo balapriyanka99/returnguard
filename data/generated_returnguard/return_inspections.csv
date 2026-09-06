@@ -22,8 +22,20 @@ RTN-S09-001,1.807,RG-8843-6FF5CB0AC9,True,minor_or_no_damage,"[""product"", ""pa
 RTN-S09-002,0.912,RG-4988-C95EC34792,True,minor_or_no_damage,"[""product"", ""packaging""]",WH-01,2026-08-28T23:59:59+00:00,0.929,synthetic_demo,S09,rg-synth-v1.0.2
 RTN-S09-003,0.674,RG-1430-DB8D4DDF4C,True,minor_or_no_damage,"[""product"", ""packaging""]",WH-01,2026-08-25T20:59:59+00:00,0.698,synthetic_demo,S09,rg-synth-v1.0.2
 RTN-S09-004,1.114,RG-28692-B2F54C9692,True,minor_or_no_damage,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",WH-01,2026-08-28T12:59:59+00:00,1.102,synthetic_demo,S09,rg-synth-v1.0.2
-RTN-S12-001,,,True,defective,[],WH-01,2026-08-25T06:59:59+00:00,,synthetic_demo,S12,rg-synth-v1.0.2
 RTN-S12-002,,,True,defective,[],WH-01,2026-08-28T00:59:59+00:00,,synthetic_demo,S12,rg-synth-v1.0.2
 RTN-S12-003,,,True,defective,[],WH-01,2026-08-27T08:59:59+00:00,,synthetic_demo,S12,rg-synth-v1.0.2
 RTN-S12-004,,,True,defective,[],WH-01,2026-08-29T15:59:59+00:00,,synthetic_demo,S12,rg-synth-v1.0.2
-RTN-S12-005,,,True,defective,[],WH-01,2026-08-29T01:59:59+00:00,,synthetic_demo,S12,rg-synth-v1.0.2
+RTN-M02-001,,,True,defective,[],WH-01,2026-08-29T10:59:59+00:00,,synthetic_demo,M02,rg-synth-v2.0.0
+RTN-M02-002,,,True,defective,[],WH-01,2026-08-29T20:59:59+00:00,,synthetic_demo,M02,rg-synth-v2.0.0
+RTN-M03-001,,,True,damaged,[],WH-01,2026-08-28T09:59:59+00:00,,synthetic_demo,M03,rg-synth-v2.0.0
+RTN-M03-002,,,True,damaged,[],WH-01,2026-08-29T04:59:59+00:00,,synthetic_demo,M03,rg-synth-v2.0.0
+RTN-M04-001,0.742,RG-20207-5F34606ACF,True,minor_or_no_damage,"[""product"", ""packaging""]",WH-01,2026-08-27T06:59:59+00:00,0.77,synthetic_demo,M04,rg-synth-v2.0.0
+RTN-M04-002,0.435,RG-15332-4F6E1E7F0B,True,minor_or_no_damage,"[""product"", ""packaging""]",WH-01,2026-08-27T06:59:59+00:00,0.45,synthetic_demo,M04,rg-synth-v2.0.0
+RTN-M06-001,,,True,defective,[],WH-01,2026-08-27T15:59:59+00:00,,synthetic_demo,M06,rg-synth-v2.0.0
+RTN-M06-002,,,True,defective,[],WH-01,2026-08-25T08:59:59+00:00,,synthetic_demo,M06,rg-synth-v2.0.0
+RTN-M07-001,0.169,,False,not_present,[],WH-01,2026-08-23T04:59:59+00:00,0.789,synthetic_demo,M07,rg-synth-v2.0.0
+RTN-M07-002,0.258,,False,not_present,[],WH-01,2026-08-26T05:59:59+00:00,1.395,synthetic_demo,M07,rg-synth-v2.0.0
+RTN-M08-001,0.802,RG-7834-E77CAC919E-SWAP,True,salable,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",WH-01,2026-08-24T00:59:59+00:00,0.761,synthetic_demo,M08,rg-synth-v2.0.0
+RTN-M08-002,1.791,RG-24208-00E1B45005-SWAP,True,salable,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",WH-01,2026-08-28T00:59:59+00:00,1.665,synthetic_demo,M08,rg-synth-v2.0.0
+RTN-S12V2-001,,,True,defective,[],WH-01,2026-08-23T17:59:59+00:00,,synthetic_demo,S12V2,rg-synth-v2.0.0
+RTN-S12V2-002,,,True,defective,[],WH-01,2026-08-31T12:59:59+00:00,,synthetic_demo,S12V2,rg-synth-v2.0.0

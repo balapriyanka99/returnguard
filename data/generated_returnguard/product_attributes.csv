@@ -25,3 +25,19 @@ product_id,expected_weight_kg,reference_image_uri,expected_accessories,serial_re
 23784,2.813,gs://returnguard-evidence/reference/product_23784.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-23784-{TOKEN},new_or_salable,158.1,24.0,synthetic_demo,,23784,rg-synth-v1.0.2
 23825,0.568,gs://returnguard-evidence/reference/product_23825.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",False,RG-23825-{TOKEN},new_or_salable,36.4,12.5,synthetic_demo,,23825,rg-synth-v1.0.2
 28692,0.805,gs://returnguard-evidence/reference/product_28692.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",False,RG-28692-{TOKEN},new_or_salable,34.28,12.5,synthetic_demo,,28692,rg-synth-v1.0.2
+4003,0.499,gs://returnguard-evidence/reference/product_4003.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-4003-{TOKEN},new_or_salable,101.36,24.0,synthetic_demo,,4003,rg-synth-v2.0.0
+5056,1.888,gs://returnguard-evidence/reference/product_5056.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-5056-{TOKEN},new_or_salable,95.95,24.0,synthetic_demo,,5056,rg-synth-v2.0.0
+6508,1.81,gs://returnguard-evidence/reference/product_6508.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-6508-{TOKEN},new_or_salable,49.81,24.0,synthetic_demo,,6508,rg-synth-v2.0.0
+7834,1.872,gs://returnguard-evidence/reference/product_7834.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-7834-{TOKEN},new_or_salable,93.84,24.0,synthetic_demo,,7834,rg-synth-v2.0.0
+8313,1.868,gs://returnguard-evidence/reference/product_8313.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-8313-{TOKEN},new_or_salable,80.9,24.0,synthetic_demo,,8313,rg-synth-v2.0.0
+8988,0.419,gs://returnguard-evidence/reference/product_8988.jpg,"[""product"", ""packaging""]",False,RG-8988-{TOKEN},new_or_salable,3.1,12.5,synthetic_demo,,8988,rg-synth-v2.0.0
+10908,0.65,gs://returnguard-evidence/reference/product_10908.jpg,"[""product"", ""packaging""]",False,RG-10908-{TOKEN},new_or_salable,8.97,12.5,synthetic_demo,,10908,rg-synth-v2.0.0
+14325,0.906,gs://returnguard-evidence/reference/product_14325.jpg,"[""product"", ""packaging""]",False,RG-14325-{TOKEN},new_or_salable,4.63,12.5,synthetic_demo,,14325,rg-synth-v2.0.0
+14329,0.51,gs://returnguard-evidence/reference/product_14329.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-14329-{TOKEN},new_or_salable,75.02,24.0,synthetic_demo,,14329,rg-synth-v2.0.0
+15332,0.403,gs://returnguard-evidence/reference/product_15332.jpg,"[""product"", ""packaging""]",False,RG-15332-{TOKEN},new_or_salable,0.58,12.5,synthetic_demo,,15332,rg-synth-v2.0.0
+20207,0.582,gs://returnguard-evidence/reference/product_20207.jpg,"[""product"", ""packaging""]",False,RG-20207-{TOKEN},new_or_salable,19.23,12.5,synthetic_demo,,20207,rg-synth-v2.0.0
+21753,0.779,gs://returnguard-evidence/reference/product_21753.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable"", ""tags""]",False,RG-21753-{TOKEN},new_or_salable,31.17,12.5,synthetic_demo,,21753,rg-synth-v2.0.0
+24208,1.11,gs://returnguard-evidence/reference/product_24208.jpg,"[""product"", ""packaging"", ""manual"", ""charger_or_cable""]",True,RG-24208-{TOKEN},new_or_salable,88.94,24.0,synthetic_demo,,24208,rg-synth-v2.0.0
+27864,0.179,gs://returnguard-evidence/reference/product_27864.jpg,"[""product"", ""packaging""]",False,RG-27864-{TOKEN},new_or_salable,8.25,12.5,synthetic_demo,,27864,rg-synth-v2.0.0
+20740,1.084,gs://returnguard-evidence/reference/product_20740.jpg,"[""product"", ""packaging""]",False,RG-20740-{TOKEN},new_or_salable,30.0,12.5,synthetic_demo,,20740,rg-synth-v2.0.0
+26732,0.753,gs://returnguard-evidence/reference/product_26732.jpg,"[""product"", ""packaging""]",False,RG-26732-{TOKEN},new_or_salable,22.47,12.5,synthetic_demo,,26732,rg-synth-v2.0.0

@@ -50,11 +50,9 @@ S11,Coordinated abuse / correlated cases,RTN-S11-002,20260903,rg-synth-v1.0.2,Co
 S11,Coordinated abuse / correlated cases,RTN-S11-003,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
 S11,Coordinated abuse / correlated cases,RTN-S11-004,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
 S11,Coordinated abuse / correlated cases,RTN-S11-005,20260903,rg-synth-v1.0.2,Coordinated abuse / correlated cases,synthetic_demo
-S12,Product-quality issue,RTN-S12-001,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
 S12,Product-quality issue,RTN-S12-002,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
 S12,Product-quality issue,RTN-S12-003,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
 S12,Product-quality issue,RTN-S12-004,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
-S12,Product-quality issue,RTN-S12-005,20260903,rg-synth-v1.0.2,Product-quality issue,synthetic_demo
 S13,High-cost legitimate return,RTN-S13-001,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
 S13,High-cost legitimate return,RTN-S13-002,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
 S13,High-cost legitimate return,RTN-S13-003,20260903,rg-synth-v1.0.2,High-cost legitimate return,synthetic_demo
@@ -63,3 +61,21 @@ S14,Mixed / ambiguous evidence,RTN-S14-001,20260903,rg-synth-v1.0.2,Mixed / ambi
 S14,Mixed / ambiguous evidence,RTN-S14-002,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo
 S14,Mixed / ambiguous evidence,RTN-S14-003,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo
 S14,Mixed / ambiguous evidence,RTN-S14-004,20260903,rg-synth-v1.0.2,Mixed / ambiguous evidence,synthetic_demo
+M01,Multi-signal: Customer return frequency + Network link,RTN-M01-001,20260903,rg-synth-v2.0.0,Multi-signal: Customer return frequency + Network link,synthetic_demo
+M01,Multi-signal: Customer return frequency + Network link,RTN-M01-002,20260903,rg-synth-v2.0.0,Multi-signal: Customer return frequency + Network link,synthetic_demo
+M02,Multi-signal: Customer return frequency + Elevated product return rate,RTN-M02-001,20260903,rg-synth-v2.0.0,Multi-signal: Customer return frequency + Elevated product return rate,synthetic_demo
+M02,Multi-signal: Customer return frequency + Elevated product return rate,RTN-M02-002,20260903,rg-synth-v2.0.0,Multi-signal: Customer return frequency + Elevated product return rate,synthetic_demo
+M03,Multi-signal: Product return defect + Photo evidence of damage,RTN-M03-001,20260903,rg-synth-v2.0.0,Multi-signal: Product return defect + Photo evidence of damage,synthetic_demo
+M03,Multi-signal: Product return defect + Photo evidence of damage,RTN-M03-002,20260903,rg-synth-v2.0.0,Multi-signal: Product return defect + Photo evidence of damage,synthetic_demo
+M04,Multi-signal: Customer wardrobing + Network link + False damage claim,RTN-M04-001,20260903,rg-synth-v2.0.0,Multi-signal: Customer wardrobing + Network link + False damage claim,synthetic_demo
+M04,Multi-signal: Customer wardrobing + Network link + False damage claim,RTN-M04-002,20260903,rg-synth-v2.0.0,Multi-signal: Customer wardrobing + Network link + False damage claim,synthetic_demo
+M05,Multi-signal: High-value customer + Product return risk + High return costs,RTN-M05-001,20260903,rg-synth-v2.0.0,Multi-signal: High-value customer + Product return risk + High return costs,synthetic_demo
+M05,Multi-signal: High-value customer + Product return risk + High return costs,RTN-M05-002,20260903,rg-synth-v2.0.0,Multi-signal: High-value customer + Product return risk + High return costs,synthetic_demo
+M06,Multi-signal: Network cluster + Defective product + Conflicting evidence,RTN-M06-001,20260903,rg-synth-v2.0.0,Multi-signal: Network cluster + Defective product + Conflicting evidence,synthetic_demo
+M06,Multi-signal: Network cluster + Defective product + Conflicting evidence,RTN-M06-002,20260903,rg-synth-v2.0.0,Multi-signal: Network cluster + Defective product + Conflicting evidence,synthetic_demo
+M07,Multi-signal: High-value network abuse + Empty box physical finding,RTN-M07-001,20260903,rg-synth-v2.0.0,Multi-signal: High-value network abuse + Empty box physical finding,synthetic_demo
+M07,Multi-signal: High-value network abuse + Empty box physical finding,RTN-M07-002,20260903,rg-synth-v2.0.0,Multi-signal: High-value network abuse + Empty box physical finding,synthetic_demo
+M08,Multi-signal: High-value product + Network cluster + Serial swap + High exposure,RTN-M08-001,20260903,rg-synth-v2.0.0,Multi-signal: High-value product + Network cluster + Serial swap + High exposure,synthetic_demo
+M08,Multi-signal: High-value product + Network cluster + Serial swap + High exposure,RTN-M08-002,20260903,rg-synth-v2.0.0,Multi-signal: High-value product + Network cluster + Serial swap + High exposure,synthetic_demo
+S12V2,Product-quality issue (V2 verified active demonstration),RTN-S12V2-001,20260903,rg-synth-v2.0.0,Product-quality issue (V2 verified active demonstration),synthetic_demo
+S12V2,Product-quality issue (V2 verified active demonstration),RTN-S12V2-002,20260903,rg-synth-v2.0.0,Product-quality issue (V2 verified active demonstration),synthetic_demo
