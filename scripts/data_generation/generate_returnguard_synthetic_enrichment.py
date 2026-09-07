@@ -64,6 +64,7 @@ from google.cloud import bigquery
 GENERATOR_VERSION_V1 = "rg-synth-v1.0.2"
 GENERATOR_VERSION_V2 = "rg-synth-v2.0.0"
 GENERATOR_VERSION = GENERATOR_VERSION_V2
+INSPECTION_SERIAL_CONTRACT_VERSION = "rg-synth-v2.0.1"
 SOURCE_DATASET = "bigquery-public-data.thelook_ecommerce"
 
 # Base single-signal scenarios (64 total cases)
@@ -1005,6 +1006,7 @@ def make_case(
         inspection = {
             "return_id": rid,
             "actual_weight_kg": round(expected_weight * rng.uniform(0.92, 1.08), 3),
+            "expected_serial": expected_serial,
             "returned_serial": f"{expected_serial}-SWAP",
             "item_present": True,
             "condition": "salable",
@@ -1014,7 +1016,7 @@ def make_case(
             "expected_weight_kg": expected_weight,
             "source_type": "synthetic_demo",
             "scenario_id": scenario_id,
-            "generator_version": version,
+            "generator_version": INSPECTION_SERIAL_CONTRACT_VERSION,
         }
 
     elif scenario_id == "S08":
@@ -1318,6 +1320,7 @@ BQ_SCHEMAS: Dict[str, List[Tuple[str, str]]] = {
     "return_inspections": [
         ("return_id", "STRING"),
         ("actual_weight_kg", "FLOAT64"),
+        ("expected_serial", "STRING"),
         ("returned_serial", "STRING"),
         ("item_present", "BOOL"),
         ("condition", "STRING"),
@@ -1476,6 +1479,53 @@ def ensure_dataset(client: bigquery.Client, dataset_id: str) -> None:
     client.create_dataset(dataset, exists_ok=True)
 
 
+def normalize_dataframe_for_bq(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
+    """Coerce a loading copy to the scalar types declared by ``BQ_SCHEMAS``."""
+    clean = df.copy().where(pd.notnull(df), None)
+
+    def is_null(value: Any) -> bool:
+        result = pd.isna(value)
+        return bool(result) if not hasattr(result, "__len__") else False
+
+    for column_name, declared_type in BQ_SCHEMAS[table_name]:
+        if column_name not in clean.columns:
+            continue
+        type_name = declared_type.upper()
+        values = clean[column_name].tolist()
+
+        def assign_values(converted: List[Any]) -> None:
+            # Explicit object dtype prevents pandas from re-inferring a
+            # string-plus-null column as float (and turning None back into NaN).
+            clean[column_name] = pd.Series(converted, index=clean.index, dtype="object")
+
+        if type_name in {"STRING"}:
+            assign_values([None if is_null(v) else str(v) for v in values])
+        elif type_name in {"INT64", "INTEGER"}:
+            assign_values([None if is_null(v) else int(v) for v in values])
+        elif type_name in {"FLOAT64", "FLOAT"}:
+            assign_values([None if is_null(v) else float(v) for v in values])
+        elif type_name in {"BOOL", "BOOLEAN"}:
+            def as_bool(value: Any) -> Optional[bool]:
+                if is_null(value):
+                    return None
+                if isinstance(value, str):
+                    lowered = value.strip().lower()
+                    if lowered in {"true", "1", "yes"}:
+                        return True
+                    if lowered in {"false", "0", "no"}:
+                        return False
+                return bool(value)
+            assign_values([as_bool(v) for v in values])
+        elif type_name in {"TIMESTAMP", "DATETIME", "DATE"}:
+            parsed = pd.to_datetime(clean[column_name], errors="raise", utc=(type_name == "TIMESTAMP"))
+            if type_name == "DATE":
+                assign_values([None if is_null(v) else v.date() for v in parsed])
+            else:
+                assign_values([None if is_null(v) else v.to_pydatetime() for v in parsed])
+
+    return clean
+
+
 def upsert_table(
     client: bigquery.Client,
     dataset_id: str,
@@ -1502,8 +1552,9 @@ def upsert_table(
     except Exception:
         table_exists = False
 
-    clean = df.copy()
-    clean = clean.where(pd.notnull(clean), None)
+    # Normalize only the loading copy; generated dataframes and local files
+    # retain their original pandas/in-memory representations.
+    clean = normalize_dataframe_for_bq(df, table_name)
 
     if not table_exists:
         job_config = bigquery.LoadJobConfig(
@@ -1649,11 +1700,15 @@ def validate_all(
         assert (s06_insp["item_present"] == False).all(), "S06 inspection violation: item_present must be False"
         assert (s06_insp["condition"] == "not_present").all(), "S06 inspection violation: condition must be not_present"
 
-    # S07: Serial swap
-    s07_insp = inspections[inspections["return_id"].str.contains("RTN-S07-")]
-    if not s07_insp.empty:
-        assert s07_insp["returned_serial"].notna().all(), "S07 inspection violation: returned_serial is missing"
-        assert (s07_insp["returned_serial"].str.endswith("-SWAP")).all(), "S07 inspection violation: serial swap token missing"
+    # S07/M08: controlled serial mismatch with an explicit expected baseline.
+    for serial_scenario in ("S07", "M08"):
+        serial_insp = inspections[inspections["scenario_id"] == serial_scenario]
+        if not serial_insp.empty:
+            assert serial_insp["expected_serial"].notna().all(), f"{serial_scenario} inspection violation: expected_serial is missing"
+            assert serial_insp["returned_serial"].notna().all(), f"{serial_scenario} inspection violation: returned_serial is missing"
+            assert (serial_insp["expected_serial"] != serial_insp["returned_serial"]).all(), f"{serial_scenario} inspection violation: serials must differ"
+            expected_swaps = serial_insp["expected_serial"].astype(str) + "-SWAP"
+            assert (serial_insp["returned_serial"] == expected_swaps).all(), f"{serial_scenario} inspection violation: controlled swap convention invalid"
 
     # S08: Missing accessories
     s08_insp = inspections[inspections["return_id"].str.contains("RTN-S08-")]
