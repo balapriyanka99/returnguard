@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from returnguard.intelligence import product
 from returnguard.intelligence.service import ReturnIntelligenceService
+from returnguard.observability import ExecutionContext, bind_execution_context
 
 
 AT = datetime(2026, 9, 2, 23, 59, 59, tzinfo=timezone.utc)
@@ -107,6 +109,20 @@ class FakeRepository:
                 "inspection_cost": 10, "recovery_value": 100, "source_type": "synthetic_demo"}
 
 
+class RecordingHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
+
+
+class FailingHandler(logging.Handler):
+    def emit(self, record):
+        raise RuntimeError("logging backend unavailable")
+
+
 class IntelligenceServiceTests(unittest.TestCase):
     def setUp(self):
         self.repo = FakeRepository()
@@ -177,6 +193,70 @@ class IntelligenceServiceTests(unittest.TestCase):
         ) as capability:
             self.service.get_product_intelligence("RTN-S12V2-001")
         capability.assert_called_once()
+
+    def test_capability_lifecycle_logging_is_safe_and_does_not_change_results(self):
+        handler = RecordingHandler()
+        service_logger = logging.getLogger("returnguard.intelligence.service")
+        service_logger.addHandler(handler)
+        service_logger.setLevel(logging.INFO)
+        try:
+            with bind_execution_context(ExecutionContext("trace-safe", "assessment-safe")):
+                customer_result = self.service.get_customer_intelligence("RTN-S02-001")
+                self.service.get_product_intelligence("RTN-M08-001")
+                self.service.get_return_behavior_intelligence("RTN-S02-001")
+                self.service.get_network_intelligence("RTN-M08-001")
+                self.service.get_return_economics("RTN-M08-001")
+                self.service.get_evidence("RTN-M08-001")
+                inspection_result = self.service.get_inspection("RTN-M08-001")
+
+            self.assertEqual(customer_result.lifetime_historical_returns, 4)
+            self.assertEqual(inspection_result.expected_serial, "EXPECTED")
+            completed = [r for r in handler.records if r.event == "completed"]
+            capability_names = {r.operation_name for r in completed}
+            self.assertTrue({
+                "customer", "product", "return_behavior", "network", "economics",
+                "evidence", "inspection",
+            }.issubset(capability_names))
+            self.assertTrue(all(r.trace_id == "trace-safe" for r in completed))
+            self.assertTrue(all(r.assessment_id == "assessment-safe" for r in completed))
+            customer_log = next(r.getMessage() for r in completed if r.operation_name == "customer")
+            self.assertIn("event=returnguard_operation", customer_log)
+            self.assertIn("layer=intelligence", customer_log)
+            self.assertIn("capability=customer", customer_log)
+            self.assertIn("status=completed", customer_log)
+            self.assertIn("duration_ms=", customer_log)
+            logged = " ".join(str(r.__dict__) for r in handler.records)
+            for sensitive in (
+                "gs://example/image", "EXPECTED-SWAP", "EXPECTED", "ip-RTN-M08-001",
+            ):
+                self.assertNotIn(sensitive, logged)
+        finally:
+            service_logger.removeHandler(handler)
+
+    def test_capability_failure_is_logged_and_original_exception_propagates(self):
+        handler = RecordingHandler()
+        service_logger = logging.getLogger("returnguard.intelligence.service")
+        service_logger.addHandler(handler)
+        service_logger.setLevel(logging.INFO)
+        try:
+            with self.assertRaisesRegex(LookupError, "Active return not found"):
+                self.service.get_product_intelligence("RTN-DOES-NOT-EXIST")
+            failed = next(record for record in handler.records if record.event == "failed")
+            self.assertEqual(failed.operation_name, "product")
+            self.assertEqual(failed.exception_type, "ReturnNotFoundError")
+        finally:
+            service_logger.removeHandler(handler)
+
+    def test_logging_failure_does_not_change_intelligence_result(self):
+        handler = FailingHandler()
+        service_logger = logging.getLogger("returnguard.intelligence.service")
+        service_logger.addHandler(handler)
+        service_logger.setLevel(logging.INFO)
+        try:
+            result = self.service.get_product_intelligence("RTN-S12V2-001")
+            self.assertEqual(result.product_returns_observed, 1)
+        finally:
+            service_logger.removeHandler(handler)
 
 
 if __name__ == "__main__":

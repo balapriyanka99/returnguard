@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import logging
 import unittest
 from datetime import datetime, timezone
 
 from returnguard.intelligence.config import IntelligenceConfig
 from returnguard.intelligence.repository import BigQueryIntelligenceRepository
+from returnguard.observability import ExecutionContext, bind_execution_context
 
 
 class EmptyJob:
@@ -19,6 +21,15 @@ class RecordingClient:
     def query(self, sql, job_config):
         self.calls.append((sql, job_config.query_parameters))
         return EmptyJob()
+
+
+class RecordingHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
 
 
 class RepositorySqlContractTests(unittest.TestCase):
@@ -86,6 +97,30 @@ class RepositorySqlContractTests(unittest.TestCase):
         self.assertIn("p.expected_accessories", sql)
         self.assertIn("product_attributes` p ON p.product_id = r.product_id", sql)
         self.assertEqual(parameters[0].value, "RTN-S08-001")
+
+    def test_repository_logging_excludes_sql_and_parameter_payloads(self):
+        handler = RecordingHandler()
+        repository_logger = logging.getLogger("returnguard.intelligence.repository")
+        repository_logger.addHandler(handler)
+        repository_logger.setLevel(logging.INFO)
+        private_parameter = "private-return-identifier"
+        try:
+            with bind_execution_context(ExecutionContext("trace-repo", "assessment-repo")):
+                self.repo.get_return(private_parameter)
+            completed = next(record for record in handler.records if record.event == "completed")
+            self.assertEqual(completed.operation_name, "get_return")
+            self.assertEqual(completed.trace_id, "trace-repo")
+            self.assertEqual(completed.assessment_id, "assessment-repo")
+            self.assertIn("event=returnguard_operation", completed.getMessage())
+            self.assertIn("layer=repository", completed.getMessage())
+            self.assertIn("operation=get_return", completed.getMessage())
+            self.assertIn("status=completed", completed.getMessage())
+            logged = " ".join(str(record.__dict__) for record in handler.records)
+            self.assertNotIn("SELECT return_id", logged)
+            self.assertNotIn(private_parameter, logged)
+            self.assertNotIn("query_parameters", logged)
+        finally:
+            repository_logger.removeHandler(handler)
 
 
 if __name__ == "__main__":

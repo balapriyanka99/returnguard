@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any, Protocol
 
 from google.cloud import bigquery
 
+from returnguard.observability import logged_operation
+
 from .config import IntelligenceConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 class IntelligenceRepository(Protocol):
@@ -29,14 +35,43 @@ class BigQueryIntelligenceRepository:
     def _row(row: Any) -> dict[str, Any]:
         return dict(row.items())
 
-    def _one(self, sql: str, parameters: list[bigquery.ScalarQueryParameter]) -> dict[str, Any] | None:
-        job = self.client.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=parameters))
-        row = next(iter(job.result()), None)
-        return None if row is None else self._row(row)
+    def _one(
+        self,
+        operation: str,
+        sql: str,
+        parameters: list[bigquery.ScalarQueryParameter],
+        *,
+        source_role: str | None = None,
+    ) -> dict[str, Any] | None:
+        with logged_operation(
+            logger, operation_type="repository_query", operation_name=operation,
+            source_role=source_role,
+        ) as log_result:
+            job = self.client.query(
+                sql, job_config=bigquery.QueryJobConfig(query_parameters=parameters)
+            )
+            row = next(iter(job.result()), None)
+            log_result["row_count"] = 0 if row is None else 1
+            return None if row is None else self._row(row)
 
-    def _all(self, sql: str, parameters: list[bigquery.ScalarQueryParameter]) -> list[dict[str, Any]]:
-        job = self.client.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=parameters))
-        return [self._row(row) for row in job.result()]
+    def _all(
+        self,
+        operation: str,
+        sql: str,
+        parameters: list[bigquery.ScalarQueryParameter],
+        *,
+        source_role: str | None = None,
+    ) -> list[dict[str, Any]]:
+        with logged_operation(
+            logger, operation_type="repository_query", operation_name=operation,
+            source_role=source_role,
+        ) as log_result:
+            job = self.client.query(
+                sql, job_config=bigquery.QueryJobConfig(query_parameters=parameters)
+            )
+            rows = [self._row(row) for row in job.result()]
+            log_result["row_count"] = len(rows)
+            return rows
 
     def get_return(self, return_id: str) -> dict[str, Any] | None:
         rg = self.config.returnguard_dataset
@@ -49,12 +84,18 @@ class BigQueryIntelligenceRepository:
         WHERE return_id = @return_id
         LIMIT 1
         """
-        return self._one(sql, [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)])
+        return self._one(
+            "get_return", sql,
+            [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)],
+            source_role="returnguard_active",
+        )
 
     def get_product_category(self, product_id: int) -> str | None:
         row = self._one(
+            "get_product_category",
             f"SELECT category FROM `{self.config.source_products}` WHERE id = @product_id LIMIT 1",
             [bigquery.ScalarQueryParameter("product_id", "INT64", product_id)],
+            source_role="frozen_products_snapshot",
         )
         return None if row is None else row.get("category")
 
@@ -124,7 +165,9 @@ class BigQueryIntelligenceRepository:
             bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at),
             bigquery.ScalarQueryParameter("current_order_item_id", "INT64", current_order_item_id),
         ]
-        return self._one(sql, params) or {}
+        return self._one(
+            "get_customer_history", sql, params, source_role="frozen_source_history"
+        ) or {}
 
     def get_product_history(self, product_id: int, assessment_at: datetime, current_order_item_id: int) -> dict[str, Any]:
         order_items = self.config.source_order_items
@@ -160,11 +203,11 @@ class BigQueryIntelligenceRepository:
           AVG(IF(category = (SELECT category FROM current_product), sale_price, NULL)) AS category_average_sale_price
         FROM facts
         """
-        return self._one(sql, [
+        return self._one("get_product_history", sql, [
             bigquery.ScalarQueryParameter("product_id", "INT64", product_id),
             bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at),
             bigquery.ScalarQueryParameter("current_order_item_id", "INT64", current_order_item_id),
-        ]) or {}
+        ], source_role="frozen_source_history") or {}
 
     def get_network_links(self, return_id: str, assessment_at: datetime) -> list[dict[str, Any]]:
         rg = self.config.returnguard_dataset
@@ -182,10 +225,10 @@ class BigQueryIntelligenceRepository:
           AND first_observed_at <= @assessment_at
         ORDER BY first_observed_at, network_link_id
         """
-        return self._all(sql, [
+        return self._all("get_network_links", sql, [
             bigquery.ScalarQueryParameter("return_id", "STRING", return_id),
             bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at),
-        ])
+        ], source_role="controlled_synthetic_network_links")
 
     def get_evidence(self, return_id: str) -> list[dict[str, Any]]:
         rg = self.config.returnguard_dataset
@@ -197,7 +240,11 @@ class BigQueryIntelligenceRepository:
         WHERE return_id = @return_id
         ORDER BY observed_at, evidence_id
         """
-        return self._all(sql, [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)])
+        return self._all(
+            "get_evidence", sql,
+            [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)],
+            source_role="returnguard_evidence",
+        )
 
     def get_inspection(self, return_id: str) -> dict[str, Any] | None:
         rg = self.config.returnguard_dataset
@@ -215,7 +262,11 @@ class BigQueryIntelligenceRepository:
         LEFT JOIN `{rg}.product_attributes` p ON p.product_id = r.product_id
         WHERE i.return_id = @return_id LIMIT 1
         """
-        return self._one(sql, [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)])
+        return self._one(
+            "get_inspection", sql,
+            [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)],
+            source_role="returnguard_inspection",
+        )
 
     def get_economics(self, return_id: str) -> dict[str, Any]:
         rg = self.config.returnguard_dataset
@@ -230,4 +281,8 @@ class BigQueryIntelligenceRepository:
         LEFT JOIN `{rg}.return_operational_costs` c USING (return_id)
         WHERE r.return_id = @return_id LIMIT 1
         """
-        return self._one(sql, [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)]) or {}
+        return self._one(
+            "get_economics", sql,
+            [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)],
+            source_role="returnguard_economics",
+        ) or {}

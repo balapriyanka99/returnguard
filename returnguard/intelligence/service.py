@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
+
+from returnguard.observability import logged_operation
 
 from . import customer, economics, evidence, inspection, network, product, return_behavior
 from .models import (
@@ -18,6 +21,9 @@ from .models import (
     ReturnMetadata,
 )
 from .repository import IntelligenceRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 class ReturnNotFoundError(LookupError):
@@ -70,47 +76,103 @@ class ReturnIntelligenceService:
         return_id: str,
         assessment_at: datetime | None = None,
     ) -> CustomerIntelligence:
-        row, effective = self._context(return_id, assessment_at)
-        product_result = product.build_product_intelligence(self.repository, row, effective)
-        return customer.build_customer_intelligence(
-            self.repository, row, effective, product_result.category
-        )
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="customer", return_id=return_id, assessment_at=assessment_at,
+        ) as log_result:
+            row, effective = self._context(return_id, assessment_at)
+            product_result = product.build_product_intelligence(self.repository, row, effective)
+            result = customer.build_customer_intelligence(
+                self.repository, row, effective, product_result.category
+            )
+            log_result["assessment_at"] = effective.isoformat()
+            log_result["data_state"] = result.customer_history_data_origin
+            return result
 
     def get_product_intelligence(
         self,
         return_id: str,
         assessment_at: datetime | None = None,
     ) -> ProductIntelligence:
-        row, effective = self._context(return_id, assessment_at)
-        return product.build_product_intelligence(self.repository, row, effective)
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="product", return_id=return_id, assessment_at=assessment_at,
+        ) as log_result:
+            row, effective = self._context(return_id, assessment_at)
+            result = product.build_product_intelligence(self.repository, row, effective)
+            log_result["assessment_at"] = effective.isoformat()
+            log_result["data_state"] = result.data_origin
+            return result
 
     def get_return_behavior_intelligence(
         self,
         return_id: str,
         assessment_at: datetime | None = None,
     ) -> ReturnBehaviorIntelligence:
-        customer_result = self.get_customer_intelligence(return_id, assessment_at)
-        return return_behavior.build_return_behavior(customer_result)
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="return_behavior", return_id=return_id,
+            assessment_at=assessment_at,
+        ) as log_result:
+            customer_result = self.get_customer_intelligence(return_id, assessment_at)
+            result = return_behavior.build_return_behavior(customer_result)
+            log_result["assessment_at"] = customer_result.assessment_at.isoformat()
+            log_result["data_state"] = result.data_origin
+            return result
 
     def get_network_intelligence(
         self,
         return_id: str,
         assessment_at: datetime | None = None,
     ) -> NetworkIntelligence:
-        row, effective = self._context(return_id, assessment_at)
-        return network.build_network_intelligence(self.repository, row, effective)
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="network", return_id=return_id, assessment_at=assessment_at,
+        ) as log_result:
+            row, effective = self._context(return_id, assessment_at)
+            result = network.build_network_intelligence(self.repository, row, effective)
+            log_result["assessment_at"] = effective.isoformat()
+            log_result["data_state"] = result.data_origin
+            return result
 
     def get_return_economics(self, return_id: str) -> ReturnEconomics:
-        row, _ = self._context(return_id)
-        return economics.build_return_economics(self.repository, row)
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="economics", return_id=return_id,
+        ) as log_result:
+            row, effective = self._context(return_id)
+            result = economics.build_return_economics(self.repository, row)
+            log_result["assessment_at"] = effective.isoformat()
+            log_result["data_state"] = result.data_origin
+            return result
 
     def get_evidence(self, return_id: str) -> list[EvidenceRecord]:
-        self._context(return_id)
-        return evidence.get_evidence_records(self.repository, return_id)
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="evidence", return_id=return_id,
+        ) as log_result:
+            _, effective = self._context(return_id)
+            result = evidence.get_evidence_records(self.repository, return_id)
+            log_result["assessment_at"] = effective.isoformat()
+            log_result["evidence_available"] = bool(result)
+            return result
 
     def get_inspection(self, return_id: str) -> InspectionRecord | None:
-        self._context(return_id)
-        return inspection.get_inspection_record(self.repository, return_id)
+        with logged_operation(
+            logger, operation_type="intelligence_capability",
+            operation_name="inspection", return_id=return_id,
+        ) as log_result:
+            _, effective = self._context(return_id)
+            result = inspection.get_inspection_record(self.repository, return_id)
+            log_result["assessment_at"] = effective.isoformat()
+            log_result["inspection_available"] = result is not None
+            log_result["serial_comparison_performed"] = bool(
+                result and result.expected_serial is not None and result.returned_serial is not None
+            )
+            log_result["accessory_comparison_performed"] = bool(
+                result and (result.expected_accessories or result.accessories_present)
+            )
+            return result
 
     def get_return_intelligence(
         self,
