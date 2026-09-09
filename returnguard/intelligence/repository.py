@@ -21,9 +21,9 @@ class IntelligenceRepository(Protocol):
     def get_customer_history(self, user_id: int, product_id: int, category: str | None, assessment_at: datetime, current_order_item_id: int) -> dict[str, Any]: ...
     def get_product_history(self, product_id: int, assessment_at: datetime, current_order_item_id: int) -> dict[str, Any]: ...
     def get_network_links(self, return_id: str, assessment_at: datetime) -> list[dict[str, Any]]: ...
-    def get_evidence(self, return_id: str) -> list[dict[str, Any]]: ...
-    def get_inspection(self, return_id: str) -> dict[str, Any] | None: ...
-    def get_economics(self, return_id: str) -> dict[str, Any]: ...
+    def get_evidence(self, return_id: str, assessment_at: datetime) -> list[dict[str, Any]]: ...
+    def get_inspection(self, return_id: str, assessment_at: datetime) -> dict[str, Any] | None: ...
+    def get_economics(self, return_id: str, assessment_at: datetime) -> dict[str, Any]: ...
 
 
 class BigQueryIntelligenceRepository:
@@ -230,7 +230,7 @@ class BigQueryIntelligenceRepository:
             bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at),
         ], source_role="controlled_synthetic_network_links")
 
-    def get_evidence(self, return_id: str) -> list[dict[str, Any]]:
+    def get_evidence(self, return_id: str, assessment_at: datetime) -> list[dict[str, Any]]:
         rg = self.config.returnguard_dataset
         sql = f"""
         SELECT evidence_id, return_id, stage, type, image_uri,
@@ -238,15 +238,19 @@ class BigQueryIntelligenceRepository:
                claim_metadata, scenario_id, generator_version
         FROM `{rg}.return_evidence`
         WHERE return_id = @return_id
+          AND observed_at <= @assessment_at
         ORDER BY observed_at, evidence_id
         """
         return self._all(
             "get_evidence", sql,
-            [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)],
+            [
+                bigquery.ScalarQueryParameter("return_id", "STRING", return_id),
+                bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at),
+            ],
             source_role="returnguard_evidence",
         )
 
-    def get_inspection(self, return_id: str) -> dict[str, Any] | None:
+    def get_inspection(self, return_id: str, assessment_at: datetime) -> dict[str, Any] | None:
         rg = self.config.returnguard_dataset
         sql = f"""
         SELECT i.return_id, r.product_id, i.actual_weight_kg,
@@ -260,15 +264,20 @@ class BigQueryIntelligenceRepository:
         FROM `{rg}.return_inspections` i
         LEFT JOIN `{rg}.return_requests` r USING (return_id)
         LEFT JOIN `{rg}.product_attributes` p ON p.product_id = r.product_id
-        WHERE i.return_id = @return_id LIMIT 1
+        WHERE i.return_id = @return_id
+          AND i.inspected_at <= @assessment_at
+        LIMIT 1
         """
         return self._one(
             "get_inspection", sql,
-            [bigquery.ScalarQueryParameter("return_id", "STRING", return_id)],
+            [
+                bigquery.ScalarQueryParameter("return_id", "STRING", return_id),
+                bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at),
+            ],
             source_role="returnguard_inspection",
         )
 
-    def get_economics(self, return_id: str) -> dict[str, Any]:
+    def get_economics(self, return_id: str, assessment_at: datetime) -> dict[str, Any]:
         rg = self.config.returnguard_dataset
         sql = f"""
         SELECT r.anchor_sale_price AS current_item_value,

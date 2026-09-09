@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
 
 from .models import EvidenceRecord
@@ -23,9 +24,10 @@ def _json(value: Any, fallback: Any) -> Any:
 def get_evidence_records(
     repository: IntelligenceRepository,
     return_id: str,
+    assessment_at: datetime,
 ) -> list[EvidenceRecord]:
     result = []
-    for row in repository.get_evidence(return_id):
+    for row in repository.get_evidence(return_id, assessment_at):
         metadata = _json(row.get("claim_metadata"), {})
         result.append(EvidenceRecord(
             evidence_id=row["evidence_id"], return_id=row["return_id"],

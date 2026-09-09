@@ -91,12 +91,19 @@ class RepositorySqlContractTests(unittest.TestCase):
         self.assertIn("IF(last_observed_at <= @assessment_at, last_observed_at, NULL)", sql)
 
     def test_inspection_retrieves_controlled_expected_accessories(self):
-        self.repo.get_inspection("RTN-S08-001")
+        self.repo.get_inspection("RTN-S08-001", self.at)
         sql, parameters = self.client.calls[-1]
         self.assertIn("i.expected_serial", sql)
         self.assertIn("p.expected_accessories", sql)
         self.assertIn("product_attributes` p ON p.product_id = r.product_id", sql)
         self.assertEqual(parameters[0].value, "RTN-S08-001")
+        self.assertIn("i.inspected_at <= @assessment_at", sql)
+
+    def test_evidence_is_point_in_time(self):
+        self.repo.get_evidence("RTN-S03-001", self.at)
+        sql, parameters = self.client.calls[-1]
+        self.assertIn("observed_at <= @assessment_at", sql)
+        self.assertEqual({p.name for p in parameters}, {"return_id", "assessment_at"})
 
     def test_repository_logging_excludes_sql_and_parameter_payloads(self):
         handler = RecordingHandler()
@@ -114,6 +121,7 @@ class RepositorySqlContractTests(unittest.TestCase):
             self.assertIn("event=returnguard_operation", completed.getMessage())
             self.assertIn("layer=repository", completed.getMessage())
             self.assertIn("operation=get_return", completed.getMessage())
+            self.assertIn('action="Load controlled return case"', completed.getMessage())
             self.assertIn("status=completed", completed.getMessage())
             logged = " ".join(str(record.__dict__) for record in handler.records)
             self.assertNotIn("SELECT return_id", logged)

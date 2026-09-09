@@ -38,6 +38,9 @@ class FakeIntelligenceService:
             raise ValueError("delegate failed")
         return FakeIntelligenceResult(7, "controlled_demo" if name == "network" else "live_source")
 
+    def resolve_assessment_at(self, return_id, assessment_at=None):
+        return assessment_at or AT
+
     def get_customer_intelligence(self, return_id, assessment_at=None):
         return self._result("customer", return_id, assessment_at)
 
@@ -50,19 +53,19 @@ class FakeIntelligenceService:
     def get_network_intelligence(self, return_id, assessment_at=None):
         return self._result("network", return_id, assessment_at)
 
-    def get_return_economics(self, return_id):
-        return self._result("economics", return_id)
+    def get_return_economics(self, return_id, assessment_at=None):
+        return self._result("economics", return_id, assessment_at)
 
-    def get_evidence(self, return_id):
-        self.calls.append(("evidence", return_id, None))
+    def get_evidence(self, return_id, assessment_at=None):
+        self.calls.append(("evidence", return_id, assessment_at))
         return [EvidenceRecord(
             evidence_id="E-1", return_id=return_id, evidence_type="photo", stage="submitted",
             image_uri="gs://private/signed-image", reference_image_uri=None,
             submitted_at=AT, source="synthetic_demo", uploaded_by="customer",
         )]
 
-    def get_inspection(self, return_id):
-        return self._result("inspection", return_id)
+    def get_inspection(self, return_id, assessment_at=None):
+        return self._result("inspection", return_id, assessment_at)
 
 
 class FakeRiskEngine:
@@ -111,9 +114,9 @@ class MCPToolTests(unittest.TestCase):
             ("get_product_intelligence", "product", True),
             ("get_return_behavior", "return_behavior", True),
             ("get_network_intelligence", "network", True),
-            ("calculate_return_economics", "economics", False),
-            ("get_return_evidence", "evidence", False),
-            ("get_return_inspection", "inspection", False),
+            ("calculate_return_economics", "economics", True),
+            ("get_return_evidence", "evidence", True),
+            ("get_return_inspection", "inspection", True),
         )
         for tool_name, delegate_name, receives_assessment in calls:
             result = getattr(self.tools, tool_name)(self.request)
@@ -130,6 +133,12 @@ class MCPToolTests(unittest.TestCase):
         customer = self.tools.get_customer_intelligence(self.request)
         self.assertIsNone(customer.result["value"])
         self.assertEqual(customer.result["data_origin"], "insufficient_history")
+
+    def test_omitted_assessment_uses_stored_timestamp_in_delegate_and_envelope(self):
+        request = IntelligenceToolRequest("RTN-M08-001", None, self.context)
+        result = self.tools.get_return_inspection(request)
+        self.assertEqual(result.assessment_at, AT)
+        self.assertIn(("inspection", "RTN-M08-001", AT), self.service.calls)
 
     def test_evidence_reports_uri_availability_without_visual_findings(self):
         result = self.tools.get_return_evidence(self.request)

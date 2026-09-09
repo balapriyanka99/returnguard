@@ -83,13 +83,15 @@ class FakeRepository:
                  "first_observed_at": AT - timedelta(days=20),
                  "last_observed_at": AT - timedelta(days=1), "source_type": "synthetic_demo"}]
 
-    def get_evidence(self, return_id):
+    def get_evidence(self, return_id, assessment_at):
+        self.calls.append(("evidence", assessment_at, return_id))
         return [{"evidence_id": f"E-{return_id}", "return_id": return_id,
                  "type": "photo", "stage": "customer_submission", "image_uri": "gs://example/image",
                  "reference_image_uri": None, "observed_at": AT, "source_type": "synthetic_demo",
                  "uploaded_by": "customer", "claim_metadata": '{"claim": "defective"}'}]
 
-    def get_inspection(self, return_id):
+    def get_inspection(self, return_id, assessment_at):
+        self.calls.append(("inspection", assessment_at, return_id))
         if return_id == "RTN-S01-001":
             return None
         return {"return_id": return_id, "actual_weight_kg": 1.0,
@@ -103,7 +105,8 @@ class FakeRepository:
                 "product_attributes_generator_version": "v2",
                 "scenario_id": self.returns[return_id]["scenario_id"], "generator_version": "v2"}
 
-    def get_economics(self, return_id):
+    def get_economics(self, return_id, assessment_at):
+        self.calls.append(("economics", assessment_at, return_id))
         return {"current_item_value": 300, "product_cost": 120,
                 "logistics_reverse_cost": 45, "reverse_logistics_cost": 55,
                 "inspection_cost": 10, "recovery_value": 100, "source_type": "synthetic_demo"}
@@ -186,6 +189,15 @@ class IntelligenceServiceTests(unittest.TestCase):
         self.assertIn(("product", later, 11), self.repo.calls)
         self.assertIn(("customer", later, 11), self.repo.calls)
 
+    def test_explicit_reassessment_reaches_economics_evidence_and_inspection(self):
+        later = AT + timedelta(days=30)
+        self.service.get_return_economics("RTN-M08-001", later)
+        self.service.get_evidence("RTN-M08-001", later)
+        self.service.get_inspection("RTN-M08-001", later)
+        self.assertIn(("economics", later, "RTN-M08-001"), self.repo.calls)
+        self.assertIn(("evidence", later, "RTN-M08-001"), self.repo.calls)
+        self.assertIn(("inspection", later, "RTN-M08-001"), self.repo.calls)
+
     def test_facade_delegates_product_capability(self):
         with patch(
             "returnguard.intelligence.service.product.build_product_intelligence",
@@ -223,6 +235,10 @@ class IntelligenceServiceTests(unittest.TestCase):
             self.assertIn("event=returnguard_operation", customer_log)
             self.assertIn("layer=intelligence", customer_log)
             self.assertIn("capability=customer", customer_log)
+            self.assertIn(
+                'action="Execute ReturnGuard intelligence capability customer"',
+                customer_log,
+            )
             self.assertIn("status=completed", customer_log)
             self.assertIn("duration_ms=", customer_log)
             logged = " ".join(str(r.__dict__) for r in handler.records)

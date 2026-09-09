@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from .models import ReturnEconomics
@@ -15,8 +16,9 @@ def _float(value: Any) -> float | None:
 def build_return_economics(
     repository: IntelligenceRepository,
     row: dict[str, Any],
+    assessment_at: datetime,
 ) -> ReturnEconomics:
-    raw = repository.get_economics(row["return_id"])
+    raw = repository.get_economics(row["return_id"], assessment_at)
     item, product = _float(raw.get("current_item_value")), _float(raw.get("product_cost"))
     reverse = _float(raw.get("reverse_logistics_cost"))
     if reverse is None:

@@ -78,14 +78,19 @@ class ReturnGuardMCPTools:
                 return_id=request.return_id,
                 assessment_at=request.assessment_at,
             ) as log_result:
+                effective_request_at = request.assessment_at
+                if effective_request_at is None:
+                    effective_request_at = self.intelligence.resolve_assessment_at(
+                        request.return_id
+                    )
                 if accepts_assessment_at:
-                    value = delegate(request.return_id, request.assessment_at)
+                    value = delegate(request.return_id, effective_request_at)
                 else:
                     value = delegate(request.return_id)
                 if result_transform is not None:
                     value = result_transform(value)
                 payload = _structured(value)
-                effective_assessment_at = getattr(value, "assessment_at", request.assessment_at)
+                effective_assessment_at = getattr(value, "assessment_at", effective_request_at)
                 if effective_assessment_at is not None:
                     log_result["assessment_at"] = effective_assessment_at.isoformat()
                 log_result["result_state"] = "missing" if payload is None else "available"
@@ -125,7 +130,7 @@ class ReturnGuardMCPTools:
     def calculate_return_economics(self, request: IntelligenceToolRequest) -> MCPToolResult:
         return self._intelligence_tool(
             "calculate_return_economics", request,
-            self.intelligence.get_return_economics, accepts_assessment_at=False,
+            self.intelligence.get_return_economics, accepts_assessment_at=True,
         )
 
     def get_return_evidence(self, request: IntelligenceToolRequest) -> MCPToolResult:
@@ -143,14 +148,14 @@ class ReturnGuardMCPTools:
 
         return self._intelligence_tool(
             "get_return_evidence", request,
-            self.intelligence.get_evidence, accepts_assessment_at=False,
+            self.intelligence.get_evidence, accepts_assessment_at=True,
             result_transform=evidence_payload,
         )
 
     def get_return_inspection(self, request: IntelligenceToolRequest) -> MCPToolResult:
         return self._intelligence_tool(
             "get_return_inspection", request,
-            self.intelligence.get_inspection, accepts_assessment_at=False,
+            self.intelligence.get_inspection, accepts_assessment_at=True,
         )
 
     def assess_risk(self, request: RiskAssessmentRequest) -> RiskAssessmentResult:

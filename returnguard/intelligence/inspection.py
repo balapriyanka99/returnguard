@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
 
 from .models import InspectionRecord
@@ -27,8 +28,9 @@ def _json(value: Any, fallback: Any) -> Any:
 def get_inspection_record(
     repository: IntelligenceRepository,
     return_id: str,
+    assessment_at: datetime,
 ) -> InspectionRecord | None:
-    row = repository.get_inspection(return_id)
+    row = repository.get_inspection(return_id, assessment_at)
     if row is None:
         return None
     accessories = _json(row.get("accessories_present"), [])

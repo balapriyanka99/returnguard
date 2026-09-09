@@ -53,6 +53,13 @@ class ReturnIntelligenceService:
             raise ValueError(f"Return {return_id} has no assessment_at")
         return current, _utc(effective)
 
+    def resolve_assessment_at(
+        self, return_id: str, assessment_at: datetime | None = None
+    ) -> datetime:
+        """Return the caller override or the case's stored assessment timestamp."""
+
+        return self._context(return_id, assessment_at)[1]
+
     @staticmethod
     def _metadata(row: dict[str, Any], assessment_at: datetime) -> ReturnMetadata:
         return ReturnMetadata(
@@ -135,35 +142,41 @@ class ReturnIntelligenceService:
             log_result["data_state"] = result.data_origin
             return result
 
-    def get_return_economics(self, return_id: str) -> ReturnEconomics:
+    def get_return_economics(
+        self, return_id: str, assessment_at: datetime | None = None
+    ) -> ReturnEconomics:
         with logged_operation(
             logger, operation_type="intelligence_capability",
-            operation_name="economics", return_id=return_id,
+            operation_name="economics", return_id=return_id, assessment_at=assessment_at,
         ) as log_result:
-            row, effective = self._context(return_id)
-            result = economics.build_return_economics(self.repository, row)
+            row, effective = self._context(return_id, assessment_at)
+            result = economics.build_return_economics(self.repository, row, effective)
             log_result["assessment_at"] = effective.isoformat()
             log_result["data_state"] = result.data_origin
             return result
 
-    def get_evidence(self, return_id: str) -> list[EvidenceRecord]:
+    def get_evidence(
+        self, return_id: str, assessment_at: datetime | None = None
+    ) -> list[EvidenceRecord]:
         with logged_operation(
             logger, operation_type="intelligence_capability",
-            operation_name="evidence", return_id=return_id,
+            operation_name="evidence", return_id=return_id, assessment_at=assessment_at,
         ) as log_result:
-            _, effective = self._context(return_id)
-            result = evidence.get_evidence_records(self.repository, return_id)
+            _, effective = self._context(return_id, assessment_at)
+            result = evidence.get_evidence_records(self.repository, return_id, effective)
             log_result["assessment_at"] = effective.isoformat()
             log_result["evidence_available"] = bool(result)
             return result
 
-    def get_inspection(self, return_id: str) -> InspectionRecord | None:
+    def get_inspection(
+        self, return_id: str, assessment_at: datetime | None = None
+    ) -> InspectionRecord | None:
         with logged_operation(
             logger, operation_type="intelligence_capability",
-            operation_name="inspection", return_id=return_id,
+            operation_name="inspection", return_id=return_id, assessment_at=assessment_at,
         ) as log_result:
-            _, effective = self._context(return_id)
-            result = inspection.get_inspection_record(self.repository, return_id)
+            _, effective = self._context(return_id, assessment_at)
+            result = inspection.get_inspection_record(self.repository, return_id, effective)
             log_result["assessment_at"] = effective.isoformat()
             log_result["inspection_available"] = result is not None
             log_result["serial_comparison_performed"] = bool(
@@ -190,7 +203,7 @@ class ReturnIntelligenceService:
             product=product_result,
             return_behavior=return_behavior.build_return_behavior(customer_result),
             network=network.build_network_intelligence(self.repository, row, effective),
-            economics=economics.build_return_economics(self.repository, row),
-            evidence=evidence.get_evidence_records(self.repository, return_id),
-            inspection=inspection.get_inspection_record(self.repository, return_id),
+            economics=economics.build_return_economics(self.repository, row, effective),
+            evidence=evidence.get_evidence_records(self.repository, return_id, effective),
+            inspection=inspection.get_inspection_record(self.repository, return_id, effective),
         )
