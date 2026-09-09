@@ -1,0 +1,6 @@
+# ReturnGuard runtime (Python >=3.11)
+mcp==2.2.0
+google-cloud-bigquery==3.44.0
+pydantic>=2.12,<3
+google-adk==2.1.0
+google-genai==1.75.0
