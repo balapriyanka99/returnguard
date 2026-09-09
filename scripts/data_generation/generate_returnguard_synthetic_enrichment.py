@@ -60,12 +60,18 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 import pandas as pd
 from google.cloud import bigquery
 
+from thelook_source import (
+    SOURCE_DATASET,
+    parse_source_as_of,
+    query_job_config,
+    source_table,
+)
+
 
 GENERATOR_VERSION_V1 = "rg-synth-v1.0.2"
 GENERATOR_VERSION_V2 = "rg-synth-v2.0.0"
 GENERATOR_VERSION = GENERATOR_VERSION_V2
 INSPECTION_SERIAL_CONTRACT_VERSION = "rg-synth-v2.0.1"
-SOURCE_DATASET = "bigquery-public-data.thelook_ecommerce"
 
 # Base single-signal scenarios (64 total cases)
 BASE_SCENARIO_COUNTS: Dict[str, int] = {
@@ -522,7 +528,7 @@ class AnchorAudit:
     status: str  # "ACCEPTED" or "REJECTED"
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Generate ReturnGuard controlled synthetic enrichment (V2).")
     p.add_argument("--project-id", required=True, help="Google Cloud project used to query/load ReturnGuard.")
     p.add_argument("--output-dir", default="./data/generated_returnguard",
@@ -533,6 +539,10 @@ def parse_args() -> argparse.Namespace:
                    help="Deterministic generation seed.")
     p.add_argument("--assessment-at", default="2026-09-02T23:59:59",
                    help="Reference timestamp for current-state features, ISO format.")
+    p.add_argument(
+        "--source-as-of", type=parse_source_as_of,
+        help="Optional fixed The Look BigQuery source version as an ISO timestamp.",
+    )
     p.add_argument("--load-bigquery", action="store_true",
                    help="Incrementally load ReturnGuard BigQuery tables via safe MERGE after generation.")
     p.add_argument("--limit-anchors", type=int, default=2500,
@@ -541,7 +551,22 @@ def parse_args() -> argparse.Namespace:
                    help="Preserve existing S01-S14 baseline cases and append multi-signal scenarios incrementally.")
     p.add_argument("--validate-only", action="store_true",
                    help="Run 5-level validation on existing files in output-dir without re-generating.")
-    return p.parse_args()
+    return p.parse_args(argv)
+
+
+def validate_fixed_source_output_target(
+    output_dir: Path, source_as_of: datetime | None
+) -> None:
+    """Prevent a fixed-source rebuild from overwriting the active local corpus."""
+
+    if source_as_of is None:
+        return
+    active_output = Path(__file__).resolve().parents[2] / "data" / "generated_returnguard"
+    if output_dir.expanduser().resolve() == active_output.resolve():
+        raise ValueError(
+            "A fixed-source rebuild must use a separate output directory; refusing "
+            f"to overwrite {active_output}"
+        )
 
 
 def iso(dt: datetime) -> str:
@@ -620,7 +645,12 @@ def accessory_set(anchor: Anchor, rng: random.Random) -> List[str]:
 # BigQuery Source Queries
 # ----------------------------------------------------------------------
 
-def query_anchors(client: bigquery.Client, limit: int, assessment_at: datetime) -> pd.DataFrame:
+def query_anchors(
+    client: bigquery.Client,
+    limit: int,
+    assessment_at: datetime,
+    source_as_of: datetime | None = None,
+) -> pd.DataFrame:
     """
     Fetch real The Look anchors created on or before assessment_at.
     Excludes already returned items so generated cases represent operational returns.
@@ -638,8 +668,8 @@ def query_anchors(client: bigquery.Client, limit: int, assessment_at: datetime) 
       p.category,
       p.department,
       CAST(p.cost AS FLOAT64) AS product_cost
-    FROM `{SOURCE_DATASET}.order_items` oi
-    JOIN `{SOURCE_DATASET}.products` p
+    FROM {source_table("order_items", source_as_of, alias="oi")}
+    JOIN {source_table("products", source_as_of, alias="p")}
       ON p.id = oi.product_id
     WHERE LOWER(CAST(oi.status AS STRING)) != 'returned'
       AND LOWER(CAST(oi.status AS STRING)) != 'cancelled'
@@ -649,10 +679,14 @@ def query_anchors(client: bigquery.Client, limit: int, assessment_at: datetime) 
     ORDER BY oi.id
     LIMIT {int(limit)}
     """
-    return client.query(query).result().to_dataframe(create_bqstorage_client=False)
+    return client.query(query, job_config=query_job_config(source_as_of)).result().to_dataframe(create_bqstorage_client=False)
 
 
-def query_customer_return_counts(client: bigquery.Client, assessment_at: datetime) -> pd.DataFrame:
+def query_customer_return_counts(
+    client: bigquery.Client,
+    assessment_at: datetime,
+    source_as_of: datetime | None = None,
+) -> pd.DataFrame:
     """
     Counts customer historical returns on or before assessment_at, excluding cancelled orders.
     """
@@ -662,15 +696,19 @@ def query_customer_return_counts(client: bigquery.Client, assessment_at: datetim
       user_id,
       COUNTIF(LOWER(CAST(status AS STRING)) = 'returned') AS returned_count,
       COUNTIF(LOWER(CAST(status AS STRING)) != 'cancelled') AS item_count
-    FROM `{SOURCE_DATASET}.order_items`
+    FROM {source_table("order_items", source_as_of)}
     WHERE user_id IS NOT NULL
       AND created_at <= TIMESTAMP('{cutoff}')
     GROUP BY user_id
     """
-    return client.query(query).result().to_dataframe(create_bqstorage_client=False)
+    return client.query(query, job_config=query_job_config(source_as_of)).result().to_dataframe(create_bqstorage_client=False)
 
 
-def query_product_return_metrics(client: bigquery.Client, assessment_at: datetime) -> pd.DataFrame:
+def query_product_return_metrics(
+    client: bigquery.Client,
+    assessment_at: datetime,
+    source_as_of: datetime | None = None,
+) -> pd.DataFrame:
     """
     Aggregates product return metrics on or before assessment_at, excluding cancelled orders.
     """
@@ -681,14 +719,14 @@ def query_product_return_metrics(client: bigquery.Client, assessment_at: datetim
       COUNTIF(LOWER(status) != 'cancelled') as observed_items,
       COUNTIF(LOWER(status) = 'returned') as returned_items,
       ROUND(COUNTIF(LOWER(status) = 'returned') / NULLIF(COUNTIF(LOWER(status) != 'cancelled'), 0), 4) as return_rate
-    FROM `{SOURCE_DATASET}.order_items`
+    FROM {source_table("order_items", source_as_of)}
     WHERE product_id IS NOT NULL
       AND created_at <= TIMESTAMP('{cutoff}')
     GROUP BY product_id
     HAVING observed_items >= 2
     ORDER BY return_rate DESC, returned_items DESC
     """
-    return client.query(query).result().to_dataframe(create_bqstorage_client=False)
+    return client.query(query, job_config=query_job_config(source_as_of)).result().to_dataframe(create_bqstorage_client=False)
 
 
 def product_metric_excluding_anchor(
@@ -717,7 +755,11 @@ def product_metric_excluding_anchor(
     }
 
 
-def query_identifiable_network(client: bigquery.Client, assessment_at: datetime) -> pd.DataFrame:
+def query_identifiable_network(
+    client: bigquery.Client,
+    assessment_at: datetime,
+    source_as_of: datetime | None = None,
+) -> pd.DataFrame:
     """
     Attributable non-anonymous events on or before assessment_at.
     """
@@ -726,13 +768,13 @@ def query_identifiable_network(client: bigquery.Client, assessment_at: datetime)
     SELECT
       user_id,
       ip_address
-    FROM `{SOURCE_DATASET}.events`
+    FROM {source_table("events", source_as_of)}
     WHERE user_id IS NOT NULL
       AND ip_address IS NOT NULL
       AND created_at <= TIMESTAMP('{cutoff}')
     GROUP BY user_id, ip_address
     """
-    return client.query(query).result().to_dataframe(create_bqstorage_client=False)
+    return client.query(query, job_config=query_job_config(source_as_of)).result().to_dataframe(create_bqstorage_client=False)
 
 
 def make_anchor_objects(
@@ -1835,6 +1877,7 @@ def main() -> None:
     rng = random.Random(args.seed)
     assessment_at = parse_assessment(args.assessment_at)
     output_dir = Path(args.output_dir)
+    validate_fixed_source_output_target(output_dir, args.source_as_of)
 
     client = bigquery.Client(project=args.project_id)
 
@@ -1863,10 +1906,10 @@ def main() -> None:
     # Query Real The Look Anchors & Context
     # ------------------------------------------------------------------
     print("Querying real The Look anchors (excluding cancelled, created <= assessment_at)...")
-    anchors_df = query_anchors(client, args.limit_anchors, assessment_at)
-    return_counts_df = query_customer_return_counts(client, assessment_at)
-    product_metrics_df = query_product_return_metrics(client, assessment_at)
-    network_df = query_identifiable_network(client, assessment_at)
+    anchors_df = query_anchors(client, args.limit_anchors, assessment_at, args.source_as_of)
+    return_counts_df = query_customer_return_counts(client, assessment_at, args.source_as_of)
+    product_metrics_df = query_product_return_metrics(client, assessment_at, args.source_as_of)
+    network_df = query_identifiable_network(client, assessment_at, args.source_as_of)
 
     if anchors_df.empty:
         raise RuntimeError("No real The Look order-item anchors were returned.")
@@ -2002,6 +2045,7 @@ def main() -> None:
         "previous_version": GENERATOR_VERSION_V1,
         "seed": args.seed,
         "assessment_at": iso(assessment_at),
+        "source_as_of": None if args.source_as_of is None else iso(args.source_as_of),
         "source_dataset": SOURCE_DATASET,
         "source_tables": [
             f"{SOURCE_DATASET}.users",

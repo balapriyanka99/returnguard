@@ -9,13 +9,20 @@ import hashlib
 import json
 import math
 import os
+from collections import Counter
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 from google.cloud import bigquery
 
-from verify_fresh_source_semantics import DEFAULT_PROJECT, SOURCE_DATASET, Case, read_cases
+from thelook_source import (
+    SOURCE_DATASET,
+    parse_source_as_of,
+    query_job_config,
+    source_table,
+)
+from verify_fresh_source_semantics import DEFAULT_PROJECT, Case, read_cases
 
 
 DEFAULT_INPUT_DIR = Path("~/Documents/ReturnGuard_ExpectedSerial_Candidate_2026-09-07").expanduser()
@@ -45,25 +52,30 @@ def query_rows(
     client: bigquery.Client,
     sql: str,
     parameters: list[bigquery.ArrayQueryParameter | bigquery.ScalarQueryParameter],
+    source_as_of: datetime | None = None,
 ) -> list[dict[str, Any]]:
-    config = bigquery.QueryJobConfig(query_parameters=parameters)
+    config = query_job_config(source_as_of, parameters)
     return [dict(row.items()) for row in client.query(sql, job_config=config).result()]
 
 
-def query_order_items(client: bigquery.Client, cases: list[Case]) -> list[dict[str, Any]]:
+def query_order_items(
+    client: bigquery.Client,
+    cases: list[Case],
+    source_as_of: datetime | None = None,
+) -> list[dict[str, Any]]:
     """Capture anchor, customer, product, and full category-history rows."""
     sql = f"""
     WITH case_categories AS (
       SELECT DISTINCT category
-      FROM `{SOURCE_DATASET}.products`
+      FROM {source_table("products", source_as_of)}
       WHERE id IN UNNEST(@case_product_ids)
         AND category IS NOT NULL
     )
     SELECT oi.id, oi.order_id, oi.user_id, oi.product_id, oi.inventory_item_id,
            oi.status, oi.sale_price, oi.created_at, oi.shipped_at,
            oi.delivered_at, oi.returned_at
-    FROM `{SOURCE_DATASET}.order_items` oi
-    LEFT JOIN `{SOURCE_DATASET}.products` p ON p.id = oi.product_id
+    FROM {source_table("order_items", source_as_of, alias="oi")}
+    LEFT JOIN {source_table("products", source_as_of, alias="p")} ON p.id = oi.product_id
     WHERE oi.created_at <= @max_assessment_at
       AND (
         oi.id IN UNNEST(@anchor_ids)
@@ -79,61 +91,74 @@ def query_order_items(client: bigquery.Client, cases: list[Case]) -> list[dict[s
         bigquery.ArrayQueryParameter("anchor_ids", "INT64", sorted({case.order_item_id for case in cases})),
         bigquery.ArrayQueryParameter("case_user_ids", "INT64", sorted({case.user_id for case in cases})),
         bigquery.ArrayQueryParameter("case_product_ids", "INT64", sorted({case.product_id for case in cases})),
-    ])
+    ], source_as_of)
 
 
-def query_products(client: bigquery.Client, product_ids: list[int]) -> list[dict[str, Any]]:
+def query_products(
+    client: bigquery.Client,
+    product_ids: list[int],
+    source_as_of: datetime | None = None,
+) -> list[dict[str, Any]]:
     sql = f"""
     SELECT id, cost, category, name, brand, retail_price, department, sku,
            distribution_center_id
-    FROM `{SOURCE_DATASET}.products`
+    FROM {source_table("products", source_as_of)}
     WHERE id IN UNNEST(@product_ids)
     """
     return query_rows(client, sql, [
         bigquery.ArrayQueryParameter("product_ids", "INT64", product_ids)
-    ])
+    ], source_as_of)
 
 
-def query_users(client: bigquery.Client, user_ids: list[int]) -> list[dict[str, Any]]:
+def query_users(
+    client: bigquery.Client,
+    user_ids: list[int],
+    source_as_of: datetime | None = None,
+) -> list[dict[str, Any]]:
     sql = f"""
     SELECT id, created_at, age, gender, city, state, country, postal_code,
            traffic_source
-    FROM `{SOURCE_DATASET}.users`
+    FROM {source_table("users", source_as_of)}
     WHERE id IN UNNEST(@user_ids)
     """
     return query_rows(client, sql, [
         bigquery.ArrayQueryParameter("user_ids", "INT64", user_ids)
-    ])
+    ], source_as_of)
 
 
-def query_orders(client: bigquery.Client, order_ids: list[int]) -> list[dict[str, Any]]:
+def query_orders(
+    client: bigquery.Client,
+    order_ids: list[int],
+    source_as_of: datetime | None = None,
+) -> list[dict[str, Any]]:
     sql = f"""
     SELECT order_id, user_id, status, created_at, shipped_at, delivered_at,
            returned_at, num_of_item
-    FROM `{SOURCE_DATASET}.orders`
+    FROM {source_table("orders", source_as_of)}
     WHERE order_id IN UNNEST(@order_ids)
     """
     return query_rows(client, sql, [
         bigquery.ArrayQueryParameter("order_ids", "INT64", order_ids)
-    ])
+    ], source_as_of)
 
 
 def query_events(
     client: bigquery.Client,
     user_ids: list[int],
     max_assessment_at: datetime,
+    source_as_of: datetime | None = None,
 ) -> list[dict[str, Any]]:
     sql = f"""
     SELECT id, user_id, session_id, sequence_number, created_at, ip_address,
            city, state, postal_code, browser, traffic_source, uri, event_type
-    FROM `{SOURCE_DATASET}.events`
+    FROM {source_table("events", source_as_of)}
     WHERE user_id IN UNNEST(@network_user_ids)
       AND created_at <= @max_assessment_at
     """
     return query_rows(client, sql, [
         bigquery.ArrayQueryParameter("network_user_ids", "INT64", user_ids),
         bigquery.ScalarQueryParameter("max_assessment_at", "TIMESTAMP", max_assessment_at),
-    ])
+    ], source_as_of)
 
 
 def read_network_users(input_dir: Path) -> set[int]:
@@ -182,7 +207,70 @@ def load_generation_metadata(input_dir: Path) -> dict[str, Any]:
         "generator_version": manifest.get("generator_version"),
         "generator_seed": manifest.get("seed"),
         "inspection_contract_version": manifest.get("inspection_contract_version"),
+        "generation_source_as_of": manifest.get("source_as_of"),
     }
+
+
+def write_rebuild_validation_report(
+    input_dir: Path,
+    cases: list[Case],
+    source_as_of: datetime | None,
+    integrity: dict[str, Any],
+    row_counts: dict[str, int],
+    metadata: dict[str, Any],
+) -> dict[str, Any]:
+    validation_path = input_dir / "case_validation_report.json"
+    validation = {}
+    if validation_path.exists():
+        with validation_path.open(encoding="utf-8") as handle:
+            validation = json.load(handle)
+    failed_contracts = [
+        row["return_id"]
+        for row in validation.get("case_validation_results", [])
+        if row.get("validation_status") != "PASS"
+    ]
+    anchor_counts = Counter(case.order_item_id for case in cases)
+    duplicate_anchors = sorted(
+        anchor_id for anchor_id, count in anchor_counts.items() if count > 1
+    )
+    retired = {"RTN-S12-001", "RTN-S12-005"}
+    active_ids = {case.return_id for case in cases}
+    retired_excluded = sorted(retired - active_ids)
+    levels_pass = all(
+        validation.get(f"level_{level}_{name}") is True
+        for level, name in (
+            (1, "structural"), (2, "relational"), (3, "temporal"),
+            (4, "semantic"), (5, "provenance"),
+        )
+    )
+    source_value = None if source_as_of is None else source_as_of.isoformat()
+    source_matches = metadata.get("generation_source_as_of") == source_value
+    overall = (
+        integrity.get("status") == "PASS"
+        and levels_pass
+        and not failed_contracts
+        and not duplicate_anchors
+        and retired_excluded == sorted(retired)
+        and source_matches
+    )
+    report = {
+        "source_as_of": source_value,
+        "generator_version": metadata.get("generator_version"),
+        "active_case_count": len(cases),
+        "scenario_counts": dict(sorted(Counter(case.scenario_id for case in cases).items())),
+        "anchor_count": integrity.get("anchors_present"),
+        "anchor_matches": integrity.get("anchor_tuple_and_price_matches"),
+        "snapshot_row_counts": row_counts,
+        "failed_scenario_contracts": failed_contracts,
+        "duplicate_anchors": duplicate_anchors,
+        "retired_scenarios_excluded": retired_excluded,
+        "generator_source_as_of_matches_snapshot": source_matches,
+        "overall_status": "PASS" if overall else "FAIL",
+    }
+    with (input_dir / "rebuild_validation_report.json").open("w", encoding="utf-8") as handle:
+        json.dump(report, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    return report
 
 
 def verify_integrity(
@@ -252,7 +340,7 @@ def verify_integrity(
     }
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path, default=DEFAULT_INPUT_DIR)
     parser.add_argument("--output-dir", required=True, type=Path)
@@ -260,7 +348,11 @@ def parse_args() -> argparse.Namespace:
         "--project-id", default=os.getenv("RETURNGUARD_GCP_PROJECT", DEFAULT_PROJECT),
         help="Billing project for five read-only BigQuery queries",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--source-as-of", type=parse_source_as_of,
+        help="Optional fixed The Look BigQuery source version as an ISO timestamp.",
+    )
+    return parser.parse_args(argv)
 
 
 def main() -> int:
@@ -276,21 +368,40 @@ def main() -> int:
     cases = read_cases(input_dir / "return_requests.csv")
     if not cases:
         raise ValueError("return_requests.csv contains no cases")
+    metadata = load_generation_metadata(input_dir)
+    generation_source_as_of = metadata.get("generation_source_as_of")
+    requested_source_as_of = (
+        None if args.source_as_of is None else args.source_as_of.isoformat()
+    )
+    if generation_source_as_of != requested_source_as_of:
+        raise ValueError(
+            "Snapshot source_as_of must exactly match the generated corpus manifest "
+            f"({generation_source_as_of!r} != {requested_source_as_of!r})"
+        )
+
     max_assessment_at = max(case.assessment_at for case in cases)
     client = bigquery.Client(project=args.project_id)
 
-    order_items = sorted(query_order_items(client, cases), key=lambda row: int(row["id"]))
+    order_items = sorted(
+        query_order_items(client, cases, args.source_as_of), key=lambda row: int(row["id"])
+    )
     product_ids = sorted({int(row["product_id"]) for row in order_items if row.get("product_id") is not None})
     order_user_ids = {int(row["user_id"]) for row in order_items if row.get("user_id") is not None}
     order_ids = sorted({int(row["order_id"]) for row in order_items if row.get("order_id") is not None})
     network_user_ids = read_network_users(input_dir) | {case.user_id for case in cases}
     all_user_ids = sorted(order_user_ids | network_user_ids)
 
-    products = sorted(query_products(client, product_ids), key=lambda row: int(row["id"]))
-    users = sorted(query_users(client, all_user_ids), key=lambda row: int(row["id"]))
-    orders = sorted(query_orders(client, order_ids), key=lambda row: int(row["order_id"]))
+    products = sorted(
+        query_products(client, product_ids, args.source_as_of), key=lambda row: int(row["id"])
+    )
+    users = sorted(
+        query_users(client, all_user_ids, args.source_as_of), key=lambda row: int(row["id"])
+    )
+    orders = sorted(
+        query_orders(client, order_ids, args.source_as_of), key=lambda row: int(row["order_id"])
+    )
     events = sorted(
-        query_events(client, sorted(network_user_ids), max_assessment_at),
+        query_events(client, sorted(network_user_ids), max_assessment_at, args.source_as_of),
         key=lambda row: (int(row["user_id"]), row["created_at"], int(row["id"])),
     )
 
@@ -307,9 +418,9 @@ def main() -> int:
         name: write_csv(snapshot_dir / name, rows, fields)
         for name, (rows, fields) in outputs.items()
     }
-    metadata = load_generation_metadata(input_dir)
     manifest = {
         "snapshot_created_at": datetime.now(timezone.utc).isoformat(),
+        "source_as_of": None if args.source_as_of is None else args.source_as_of.isoformat(),
         "source_dataset": SOURCE_DATASET,
         "source_tables": {
             "CORE": [f"{SOURCE_DATASET}.order_items", f"{SOURCE_DATASET}.products"],
@@ -345,6 +456,9 @@ def main() -> int:
     with (snapshot_dir / "snapshot_manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2, sort_keys=True)
         handle.write("\n")
+    rebuild_report = write_rebuild_validation_report(
+        input_dir, cases, args.source_as_of, integrity, row_counts, metadata
+    )
 
     print("SOURCE SNAPSHOT")
     print(f"Cases: {len(cases)}")
@@ -358,7 +472,8 @@ def main() -> int:
     print(f"Duplicate order_item IDs: {integrity['duplicate_order_item_ids']}")
     print(f"Current-case exclusion reproducible: {integrity['current_case_exclusion_reproducible']}")
     print(f"SNAPSHOT INTEGRITY: {integrity['status']}")
-    return 0 if integrity["status"] == "PASS" else 1
+    print(f"REBUILD VALIDATION: {rebuild_report['overall_status']}")
+    return 0 if rebuild_report["overall_status"] == "PASS" else 1
 
 
 if __name__ == "__main__":

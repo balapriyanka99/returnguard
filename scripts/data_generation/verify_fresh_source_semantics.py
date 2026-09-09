@@ -22,9 +22,14 @@ from typing import Any
 from google.cloud import bigquery
 
 from generate_returnguard_synthetic_enrichment import SCENARIO_CONTRACTS
+from thelook_source import (
+    SOURCE_DATASET,
+    parse_source_as_of,
+    query_job_config,
+    source_table,
+)
 
 
-SOURCE_DATASET = "bigquery-public-data.thelook_ecommerce"
 DEFAULT_INPUT_DIR = Path("~/Documents/ReturnGuard_Fresh_2026-09-07").expanduser()
 DEFAULT_PROJECT = "return-guard-506407"
 SPECIAL_PRODUCT_SCENARIOS = frozenset({"S12", "S12V2", "M02", "M03", "M05", "M06", "M08"})
@@ -94,12 +99,13 @@ def read_cases(path: Path) -> list[Case]:
 def query_relevant_order_items(
     client: bigquery.Client,
     cases: list[Case],
+    source_as_of: datetime | None = None,
 ) -> list[dict[str, Any]]:
     """Fetch the union needed for anchors, customer history, and product history."""
     sql = f"""
     SELECT id, order_id, user_id, product_id, status, created_at, returned_at,
            CAST(sale_price AS FLOAT64) AS sale_price
-    FROM `{SOURCE_DATASET}.order_items`
+    FROM {source_table("order_items", source_as_of)}
     WHERE created_at <= @max_assessment_at
       AND (
         id IN UNNEST(@anchor_ids)
@@ -115,23 +121,24 @@ def query_relevant_order_items(
         bigquery.ArrayQueryParameter("user_ids", "INT64", sorted({case.user_id for case in cases})),
         bigquery.ArrayQueryParameter("product_ids", "INT64", sorted({case.product_id for case in cases})),
     ]
-    job = client.query(sql, job_config=bigquery.QueryJobConfig(query_parameters=parameters))
+    job = client.query(sql, job_config=query_job_config(source_as_of, parameters))
     return [dict(row.items()) for row in job.result()]
 
 
 def query_network_pool_users(
     client: bigquery.Client,
     assessment_at: datetime,
+    source_as_of: datetime | None = None,
 ) -> tuple[int, int | None]:
     """Return enough facts to establish whether a distinct attributable peer exists."""
     sql = f"""
     SELECT COUNT(DISTINCT user_id) AS user_count, MIN(user_id) AS only_or_min_user_id
-    FROM `{SOURCE_DATASET}.events`
+    FROM {source_table("events", source_as_of)}
     WHERE user_id IS NOT NULL
       AND ip_address IS NOT NULL
       AND created_at <= @assessment_at
     """
-    config = bigquery.QueryJobConfig(query_parameters=[
+    config = query_job_config(source_as_of, [
         bigquery.ScalarQueryParameter("assessment_at", "TIMESTAMP", assessment_at)
     ])
     row = next(iter(client.query(sql, job_config=config).result()))
@@ -331,7 +338,7 @@ def print_report(results: list[CaseResult]) -> bool:
     return passed
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path, default=DEFAULT_INPUT_DIR)
     parser.add_argument(
@@ -339,7 +346,11 @@ def parse_args() -> argparse.Namespace:
         default=os.getenv("RETURNGUARD_GCP_PROJECT", DEFAULT_PROJECT),
         help="Billing project for read-only BigQuery queries",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--source-as-of", type=parse_source_as_of,
+        help="Optional fixed The Look BigQuery source version as an ISO timestamp.",
+    )
+    return parser.parse_args(argv)
 
 
 def main() -> int:
@@ -350,14 +361,16 @@ def main() -> int:
         if not cases:
             raise ValueError(f"No cases found in {request_path}")
         client = bigquery.Client(project=args.project_id)
-        source_rows = query_relevant_order_items(client, cases)
+        source_rows = query_relevant_order_items(client, cases, args.source_as_of)
         network_assessments = {
             case.assessment_at
             for case in cases
             if SCENARIO_CONTRACTS[case.scenario_id].anchor_requirements.get("network_pool_required")
         }
         network_facts = {
-            assessment_at: query_network_pool_users(client, assessment_at)
+            assessment_at: query_network_pool_users(
+                client, assessment_at, args.source_as_of
+            )
             for assessment_at in network_assessments
         }
         return 0 if print_report(verify(cases, source_rows, network_facts)) else 1

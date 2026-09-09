@@ -3,3 +3,9 @@ __pycache__/
 *.py[cod]
 .env
 .env.*
+
+# ReturnGuard generated datasets and snapshots
+/data/generated_returnguard/
+/data/generated_returnguard_rebuilt/
+/data/generated_returnguard_rebuilt_snapshot/
+/data/audits/
