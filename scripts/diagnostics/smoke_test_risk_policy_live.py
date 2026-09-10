@@ -102,7 +102,10 @@ def print_risk_diagnostics(risk: Any) -> None:
     print("Risk reasons:")
     if risk.reasons:
         for reason in risk.reasons:
-            print(f"  {reason.code}: {reason.contribution:+d}")
+            print(
+                f"  {reason.code}: {reason.contribution:+d} — "
+                f"{reason.explanation}"
+            )
     else:
         print("  none")
 
@@ -136,6 +139,48 @@ def print_risk_diagnostics(risk: Any) -> None:
             print(f"  {limitation}")
     else:
         print("  none")
+
+
+def print_policy_diagnostics(policy: Any) -> None:
+    """Print only typed values produced by the deterministic Policy Engine."""
+
+    economics = policy.economics
+    print("[POLICY]")
+    print(f"policy version: {policy.policy_version}")
+    print(f"matched rule: {policy.matched_rule}")
+    print(f"action: {policy.action.value}")
+    print(f"normalized reason: {policy.normalized_reason.value}")
+    print("economics:")
+    print(f"  current item value: {economics.current_item_value}")
+    print(f"  reverse logistics cost: {economics.reverse_logistics_cost}")
+    print(f"  inspection cost: {economics.inspection_cost}")
+    print(f"  recovery value: {economics.recovery_value}")
+    print(f"  total operational cost: {economics.total_operational_cost}")
+    print(f"  economics confidence: {economics.data_confidence}")
+    print("pricing:")
+    if policy.pricing is None:
+        print("  unavailable (P30_RETURN_FEE did not match)")
+        print(f"  final return fee: {policy.return_fee}")
+        return
+    pricing = policy.pricing
+    print(f"  base fee: {pricing.pricing_base_fee}")
+    print(f"  raw multiplier: {pricing.pricing_raw_multiplier}")
+    print(f"  sample-size cap: {pricing.pricing_sample_size_cap}")
+    print(f"  capped multiplier: {pricing.pricing_capped_multiplier}")
+    print(
+        "  positive behavior signal count: "
+        f"{pricing.pricing_behavior_signal_count}"
+    )
+    print(f"  item-value cap: {pricing.pricing_item_value_cap}")
+    print(f"  product mitigation: {pricing.product_mitigation:+d}")
+    print(
+        "  product mitigation effect: "
+        f"{pricing.product_mitigation_effect.value}"
+    )
+    print(f"  final return fee: {policy.return_fee}")
+    print("  pricing rationale:")
+    for item in pricing.pricing_rationale:
+        print(f"    - {item}")
 
 
 def print_customer_return_value_diagnostic(
@@ -211,18 +256,17 @@ def main() -> int:
         print(f"  products: {config.source_products}")
         print(f"Return: {risk.return_id}")
         print(f"Assessment ID: {risk.assessment_id}")
-        print(f"Risk engine: {risk.engine_version}")
-        print(f"Risk score: {risk.score if risk.score is not None else 'UNDETERMINED'}")
-        print(f"Risk band: {risk.band.value}")
-        print(f"Coverage: {risk.coverage.value}")
+        print("[RISK]")
+        print(f"engine: {risk.engine_version}")
+        print(f"score: {risk.score if risk.score is not None else 'UNDETERMINED'}")
+        print(f"band: {risk.band.value}")
+        print(f"coverage: {risk.coverage.value}")
         print_risk_diagnostics(risk)
         print_customer_return_value_diagnostic(
             intelligence.diagnostic_customer,
             intelligence.diagnostic_return_behavior,
         )
-        print(f"Policy: {policy.policy_version}")
-        print(f"Policy rule: {policy.matched_rule}")
-        print(f"Policy action: {policy.action.value}")
+        print_policy_diagnostics(policy)
         print("Prohibited-field check: PASS")
         print("BigQuery writes: 0")
         return 0

@@ -7,12 +7,12 @@ CREATE TABLE IF NOT EXISTS `return-guard-506407.returnguard.risk_events` (
   score INT64,
   band STRING NOT NULL,
   coverage STRING NOT NULL,
-  evaluable_domains ARRAY<STRING> NOT NULL,
+  evaluable_domains ARRAY<STRING>,
   group_scores_json JSON NOT NULL,
   product_mitigation INT64 NOT NULL,
   reasons_json JSON NOT NULL,
-  patterns ARRAY<STRING> NOT NULL,
-  limitations ARRAY<STRING> NOT NULL,
+  patterns ARRAY<STRING>,
+  limitations ARRAY<STRING>,
   data_origin STRING NOT NULL,
   created_at TIMESTAMP NOT NULL
 )

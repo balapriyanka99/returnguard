@@ -189,6 +189,11 @@ def log_policy_summary(logger: logging.Logger, result: Any) -> None:
         f"  action: {action}",
         f"  matched rule: {result.matched_rule}",
         f"  policy version: {result.policy_version}",
+        (
+            "  normalized reason: "
+            f"{getattr(result.normalized_reason, 'value', result.normalized_reason)}"
+        ),
+        f"  return fee: {result.return_fee if result.return_fee is not None else 'none'}",
         "  economics:",
         f"    item value: {economics.current_item_value}",
         f"    reverse logistics: {economics.reverse_logistics_cost}",
@@ -196,7 +201,25 @@ def log_policy_summary(logger: logging.Logger, result: Any) -> None:
         f"    recovery value: {economics.recovery_value}",
         "    estimated net return cost: unavailable",
     ]
-    _append_values(lines, "rationale", list(result.rationale))
+    if result.fee_reason is not None:
+        pricing = getattr(result, "pricing", None)
+        if pricing is not None:
+            lines.extend([
+                "  pricing:",
+                f"    base fee: {pricing.pricing_base_fee}",
+                f"    raw multiplier: {pricing.pricing_raw_multiplier}",
+                f"    sample-size cap: {pricing.pricing_sample_size_cap}",
+                f"    capped multiplier: {pricing.pricing_capped_multiplier}",
+                f"    positive behavior signals: {pricing.pricing_behavior_signal_count}",
+                f"    item-value cap: {pricing.pricing_item_value_cap}",
+                (
+                    "    product mitigation effect: "
+                    f"{getattr(pricing.product_mitigation_effect, 'value', pricing.product_mitigation_effect)}"
+                ),
+            ])
+        _append_values(lines, "fee rationale", list(result.rationale))
+    else:
+        _append_values(lines, "rationale", list(result.rationale))
     _append_values(lines, "limitations", list(getattr(result, "limitations", [])))
     _human_log(logger, lines)
 
