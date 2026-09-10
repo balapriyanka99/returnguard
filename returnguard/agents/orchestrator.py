@@ -9,7 +9,12 @@ from typing import Any
 
 from google.adk.agents import LlmAgent
 
-from returnguard.observability import ExecutionContext, bind_execution_context, log_action
+from returnguard.observability import (
+    ExecutionContext,
+    bind_execution_context,
+    log_action,
+    log_orchestration_summary,
+)
 
 from .config import AgentConfig
 from .contracts import (
@@ -313,6 +318,7 @@ class HybridOrchestrator:
                     return_id=context.return_id,
                     assessment_at=context.assessment_at,
                 )
+                log_orchestration_summary(logger, final)
                 return final
 
             log_action(
@@ -396,4 +402,5 @@ class HybridOrchestrator:
                 return_id=context.return_id,
                 assessment_at=context.assessment_at,
             )
+            log_orchestration_summary(logger, final)
             return final

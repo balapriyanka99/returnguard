@@ -18,6 +18,7 @@ from returnguard.observability import (
     ExecutionContext,
     bind_execution_context,
     log_action,
+    log_specialist_summary,
     logged_operation,
 )
 
@@ -262,4 +263,5 @@ class ADKAgentRuntime:
                     )
                     raise
                 log_result["agent_status"] = getattr(result, "status", None)
+                log_specialist_summary(logger, result)
                 return result

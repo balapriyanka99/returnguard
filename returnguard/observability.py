@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sys
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -11,6 +12,193 @@ from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
 from typing import Any, Iterator
+
+
+_SENSITIVE_TEXT_MARKERS = (
+    "expected_serial",
+    "expected serial",
+    "returned_serial",
+    "returned serial",
+    "image_uri",
+    "image uri",
+    "reference_image_uri",
+    "reference image uri",
+    "linked_user_id",
+    "linked user id",
+    "linked user",
+    "linked account",
+    "network_identifier",
+    "network identifier",
+    "ip_address",
+    "ip address",
+    "session_id",
+    "session id",
+    "device_identifier",
+    "device identifier",
+    "device_id",
+    "device id",
+    "fraud_labels",
+    "fraud labels",
+    "scenario_id",
+    "scenario id",
+    "scenario ",
+)
+_URI_PATTERN = re.compile(r"(?i)\b(?:gs|https?)://\S+")
+_IPV4_PATTERN = re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)")
+_LONG_HEX_PATTERN = re.compile(r"(?i)\b[0-9a-f]{24,}\b")
+_CONTROLLED_SERIAL_PATTERN = re.compile(r"\bRG-[A-Za-z0-9-]+\b")
+
+
+def sanitize_readable_text(value: Any) -> str:
+    """Conservatively sanitize model-authored text before human-readable logs."""
+
+    text = str(value).replace("\r", " ").replace("\n", " ").strip()
+    folded = text.casefold()
+    if any(marker in folded for marker in _SENSITIVE_TEXT_MARKERS):
+        return "[redacted sensitive content]"
+    text = _URI_PATTERN.sub("[redacted uri]", text)
+    text = _IPV4_PATTERN.sub("[redacted ip]", text)
+    text = _LONG_HEX_PATTERN.sub("[redacted identifier]", text)
+    return _CONTROLLED_SERIAL_PATTERN.sub("[redacted serial]", text)
+
+
+def _human_log(logger: logging.Logger, lines: list[str]) -> None:
+    """Emit an additional readable record without affecting business behavior."""
+
+    try:
+        logger.info("\n".join(lines))
+    except Exception:  # pragma: no cover - logging must remain non-fatal
+        pass
+
+
+def _append_values(
+    lines: list[str],
+    label: str,
+    values: list[Any],
+    *,
+    indent: str = "  ",
+) -> None:
+    lines.append(f"{indent}{label}:")
+    if values:
+        lines.extend(f"{indent}  - {sanitize_readable_text(value)}" for value in values)
+    else:
+        lines.append(f"{indent}  none")
+
+
+_AGENT_DISPLAY_NAMES = {
+    "customer_behavior_agent": "Customer Behavior Agent",
+    "product_intelligence_agent": "Product Intelligence Agent",
+    "inspection_agent": "Inspection Agent",
+}
+
+
+def log_specialist_summary(logger: logging.Logger, result: Any) -> None:
+    """Log a validated bounded specialist result without tool payloads."""
+
+    name = getattr(result, "agent_name", "")
+    display = _AGENT_DISPLAY_NAMES.get(name)
+    if display is None:
+        return
+    status = getattr(getattr(result, "status", None), "value", result.status)
+    lines = [
+        f"[AGENT] {display} completed",
+        f"  status: {sanitize_readable_text(status)}",
+        f"  summary: {sanitize_readable_text(result.summary)}",
+    ]
+    findings = []
+    for finding in result.findings:
+        title = sanitize_readable_text(finding.title)
+        description = sanitize_readable_text(finding.description)
+        findings.append(f"{title} — {description}" if description else title)
+    _append_values(lines, "findings", findings)
+    _append_values(lines, "limitations", list(result.limitations))
+    _append_values(
+        lines,
+        "tools",
+        list(dict.fromkeys(item.tool_name for item in result.tool_evidence)),
+    )
+    _human_log(logger, lines)
+
+
+def log_orchestration_summary(logger: logging.Logger, result: Any) -> None:
+    """Log deterministic orchestration metadata and its validated synthesis."""
+
+    intent = getattr(getattr(result, "request_intent", None), "value", result.request_intent)
+    status = getattr(getattr(result, "status", None), "value", result.status)
+    lines = [
+        "[ORCHESTRATOR] Investigation completed",
+        f"  intent: {sanitize_readable_text(intent)}",
+        f"  status: {sanitize_readable_text(status)}",
+        f"  summary: {sanitize_readable_text(result.summary)}",
+    ]
+    findings = [
+        f"{finding.title} — {finding.description}"
+        for specialist in result.specialist_results
+        for finding in specialist.findings
+    ]
+    _append_values(lines, "findings", findings)
+    _append_values(lines, "limitations", list(result.limitations))
+    _append_values(lines, "executed specialists", list(result.agents_executed))
+    skipped = [f"{name}: {reason}" for name, reason in result.agents_skipped.items()]
+    skipped.extend(
+        f"{item.capability}: {item.reason}" for item in result.missing_capabilities
+    )
+    _append_values(lines, "skipped/unavailable specialists", skipped)
+    _human_log(logger, lines)
+
+
+def log_risk_summary(logger: logging.Logger, result: Any) -> None:
+    """Log safe deterministic Risk-v1 outputs, never underlying raw evidence."""
+
+    score = "UNDETERMINED" if result.score is None else result.score
+    band = getattr(result.band, "value", result.band)
+    coverage = getattr(result.coverage, "value", result.coverage)
+    lines = [
+        "[RISK] Assessment completed",
+        f"  score: {score}",
+        f"  band: {band}",
+        f"  evidence coverage: {coverage}",
+        "  group scores:",
+    ]
+    lines.extend(
+        f"    {name}: {contribution:+d}"
+        for name, contribution in result.group_scores.items()
+    )
+    lines.append(f"  product mitigation: {result.product_mitigation:+d}")
+    _append_values(
+        lines,
+        "strongest reasons",
+        [f"{reason.code}: {reason.contribution:+d}" for reason in result.reasons],
+    )
+    _append_values(
+        lines,
+        "patterns",
+        [getattr(pattern, "value", pattern) for pattern in result.patterns],
+    )
+    _append_values(lines, "limitations", list(result.limitations))
+    _human_log(logger, lines)
+
+
+def log_policy_summary(logger: logging.Logger, result: Any) -> None:
+    """Log safe Policy-v1 outputs and its already-normalized economics summary."""
+
+    action = getattr(result.action, "value", result.action)
+    economics = result.economics
+    lines = [
+        "[POLICY] Evaluation completed",
+        f"  action: {action}",
+        f"  matched rule: {result.matched_rule}",
+        f"  policy version: {result.policy_version}",
+        "  economics:",
+        f"    item value: {economics.current_item_value}",
+        f"    reverse logistics: {economics.reverse_logistics_cost}",
+        f"    inspection cost: {economics.inspection_cost}",
+        f"    recovery value: {economics.recovery_value}",
+        "    estimated net return cost: unavailable",
+    ]
+    _append_values(lines, "rationale", list(result.rationale))
+    _append_values(lines, "limitations", list(getattr(result, "limitations", [])))
+    _human_log(logger, lines)
 
 
 @dataclass(frozen=True)
@@ -50,6 +238,8 @@ def _message(event: str, fields: dict[str, Any]) -> str:
         "intelligence_capability": "intelligence",
         "repository_query": "repository",
         "agent": "agent",
+        "risk_engine": "risk",
+        "policy_engine": "policy",
     }.get(fields.get("operation_type"), "application")
     values: list[tuple[str, Any]] = [
         ("event", "returnguard_operation"),
@@ -101,6 +291,8 @@ _OPERATION_ACTIONS = {
     ("agent", "product_intelligence_agent"): "Interpret grounded product intelligence",
     ("agent", "inspection_agent"): "Interpret deterministic inspection facts",
     ("agent", "orchestrator_agent"): "Coordinate bounded ReturnGuard specialists",
+    ("risk_engine", "risk-v1"): "Calculate deterministic suspiciousness score",
+    ("policy_engine", "policy-v1"): "Evaluate deterministic return policy",
     ("mcp_tool", "get_customer_intelligence"): "Fetch deterministic customer intelligence",
     ("mcp_tool", "get_product_intelligence"): "Fetch deterministic product intelligence",
     ("mcp_tool", "get_return_behavior"): "Fetch deterministic return behavior",
