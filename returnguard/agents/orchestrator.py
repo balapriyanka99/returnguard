@@ -15,6 +15,7 @@ from returnguard.observability import (
     log_action,
     log_orchestration_summary,
 )
+from returnguard.policy.service import ReturnPolicyService
 
 from .config import AgentConfig
 from .contracts import (
@@ -28,6 +29,7 @@ from .contracts import (
     WorkflowIntent,
 )
 from .customer_behavior import create_customer_behavior_agent
+from .decision_synthesis import DecisionSynthesisAgent, build_decision_input
 from .inspection import create_inspection_agent
 from .mcp_bridge import MCPToolBridge
 from .product_intelligence import create_product_intelligence_agent
@@ -92,21 +94,6 @@ def plan_orchestration(
     elif intent == WorkflowIntent.RISK_POLICY_DECISION:
         if inspection_available:
             selected.append(INSPECTION_AGENT)
-        missing.extend([
-            MissingCapability(
-                capability="deterministic_risk",
-                reason="The deterministic Risk Engine is not implemented",
-                next_action="Implement and validate deterministic risk scoring",
-            ),
-            MissingCapability(
-                capability="decision_policy",
-                reason="The Decision & Policy Agent / policy workflow is not implemented",
-                next_action=(
-                    "Implement Decision & Policy only after deterministic risk exists"
-                ),
-            ),
-        ])
-        next_action = "Implement deterministic risk, then Decision & Policy"
 
     return OrchestrationPlan(
         request_intent=intent,
@@ -131,12 +118,24 @@ class HybridOrchestrator:
         *,
         model: Any = None,
         runtime_factory: Callable[[], ADKAgentRuntime] | None = None,
+        policy_service: ReturnPolicyService | None = None,
+        decision_synthesis_agent: DecisionSynthesisAgent | None = None,
     ) -> None:
         self.bridge = bridge
         self.config = config or AgentConfig.from_env()
         self.model = model
         self.runtime_factory = runtime_factory or (
             lambda: ADKAgentRuntime(self.config)
+        )
+        self.policy_service = policy_service
+        self.decision_synthesis_agent = decision_synthesis_agent or (
+            DecisionSynthesisAgent(
+                self.config,
+                model=self.model,
+                runtime_factory=self.runtime_factory,
+            )
+            if policy_service is not None
+            else None
         )
 
     def _specialist(self, name: str, context: AgentExecutionContext) -> LlmAgent:
@@ -321,6 +320,110 @@ class HybridOrchestrator:
                 log_orchestration_summary(logger, final)
                 return final
 
+            decision_synthesis = None
+            risk = None
+            economics = None
+            policy = None
+            if self.policy_service is not None:
+                log_action(
+                    logger,
+                    operation_type="agent",
+                    operation_name="hybrid_orchestrator",
+                    action="Compute authoritative risk, economics, and policy state",
+                    status="started",
+                    return_id=context.return_id,
+                    assessment_at=context.assessment_at,
+                )
+                try:
+                    risk, policy, economics_result = (
+                        self.policy_service.evaluate_with_economics(
+                            context.return_id,
+                            context.assessment_at,
+                            assessment_id=context.assessment_id,
+                        )
+                    )
+                    decision_input = build_decision_input(
+                        plan,
+                        agents_executed=executed,
+                        agents_skipped=skipped,
+                        specialist_results=results,
+                        risk=risk,
+                        economics=economics_result,
+                        policy=policy,
+                    )
+                    if self.decision_synthesis_agent is None:  # pragma: no cover
+                        raise RuntimeError("Decision synthesis agent is unavailable")
+                    decision_synthesis = await self.decision_synthesis_agent.synthesize(
+                        decision_input,
+                        context,
+                        event_observer=event_observer,
+                    )
+                    economics = decision_synthesis.economics_summary
+                    log_action(
+                        logger,
+                        operation_type="agent",
+                        operation_name="hybrid_orchestrator",
+                        action="Complete protected decision synthesis",
+                        status="completed",
+                        return_id=context.return_id,
+                        assessment_at=context.assessment_at,
+                    )
+                except Exception as exc:
+                    skipped["decision_synthesis"] = (
+                        f"Deterministic decision state failed: {type(exc).__name__}"
+                    )
+                    log_action(
+                        logger,
+                        operation_type="agent",
+                        operation_name="hybrid_orchestrator",
+                        action="Compute authoritative risk, economics, and policy state",
+                        status="failed",
+                        return_id=context.return_id,
+                        assessment_at=context.assessment_at,
+                        level=logging.ERROR,
+                    )
+
+            if decision_synthesis is not None:
+                status = (
+                    AgentStatus.COMPLETED
+                    if len(executed) == len(plan.agents_selected)
+                    and not skipped
+                    and not plan.missing_capabilities
+                    else AgentStatus.PARTIAL
+                )
+                final = OrchestrationResult(
+                    request_intent=plan.request_intent,
+                    return_id=plan.return_id,
+                    assessment_at=plan.assessment_at,
+                    status=status,
+                    agents_selected=list(plan.agents_selected),
+                    agents_executed=executed,
+                    agents_skipped=skipped,
+                    specialist_results=results,
+                    missing_capabilities=plan.missing_capabilities,
+                    next_required_action=plan.next_required_action,
+                    summary=decision_synthesis.decision_summary,
+                    limitations=decision_synthesis.limitations,
+                    network_context=decision_synthesis.network_context,
+                    risk=risk,
+                    economics=economics,
+                    policy=policy,
+                    decision_synthesis=decision_synthesis,
+                    trace_id=plan.trace_id,
+                    assessment_id=plan.assessment_id,
+                )
+                log_action(
+                    logger,
+                    operation_type="agent",
+                    operation_name="hybrid_orchestrator",
+                    action="Complete hybrid orchestration workflow",
+                    status=final.status.value,
+                    return_id=context.return_id,
+                    assessment_at=context.assessment_at,
+                )
+                log_orchestration_summary(logger, final)
+                return final
+
             log_action(
                 logger,
                 operation_type="agent",
@@ -381,6 +484,10 @@ class HybridOrchestrator:
                 next_required_action=plan.next_required_action,
                 summary=synthesis.summary,
                 limitations=synthesis.limitations,
+                risk=risk,
+                economics=economics,
+                policy=policy,
+                decision_synthesis=decision_synthesis,
                 trace_id=plan.trace_id,
                 assessment_id=plan.assessment_id,
             )

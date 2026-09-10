@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -31,10 +32,13 @@ from returnguard.intelligence import (
     ReturnIntelligenceService,
 )
 from returnguard.mcp import ReturnGuardMCPTools
+from returnguard.policy import ReturnPolicyService
 
 
 DEFAULT_RETURN_ID = "RTN-M08-002"
 DEFAULT_ASSESSMENT_AT = "2026-09-02T23:59:59+00:00"
+DEFAULT_VERTEX_PROJECT = "return-guard-506407"
+DEFAULT_VERTEX_LOCATION = "us-central1"
 SUPPORTED_LIVE_INTENTS = frozenset({
     WorkflowIntent.GENERAL_INVESTIGATION,
     WorkflowIntent.INSPECTION_REVIEW,
@@ -169,12 +173,33 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--trace-id", default="orchestrator-smoke-trace")
     parser.add_argument("--assessment-id", default="orchestrator-smoke-assessment")
     parser.add_argument(
+        "--google-cloud-project",
+        default=os.getenv("GOOGLE_CLOUD_PROJECT", DEFAULT_VERTEX_PROJECT),
+    )
+    parser.add_argument(
+        "--google-cloud-location",
+        default=os.getenv("GOOGLE_CLOUD_LOCATION", DEFAULT_VERTEX_LOCATION),
+    )
+    parser.add_argument(
         "--inspection-available",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Current lifecycle availability used by deterministic planning.",
     )
     return parser.parse_args(argv)
+
+
+def bootstrap_vertex_ai(args: argparse.Namespace) -> AgentConfig:
+    """Force this authenticated smoke onto Vertex AI, never the API-key backend."""
+
+    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+    os.environ["GOOGLE_CLOUD_PROJECT"] = args.google_cloud_project
+    os.environ["GOOGLE_CLOUD_LOCATION"] = args.google_cloud_location
+    config = AgentConfig.from_env()
+    config.validate_for_live_model()
+    if not config.use_vertex_ai:
+        raise RuntimeError("Orchestrator live smoke must use Vertex AI")
+    return config
 
 
 def workflow_request(intent: WorkflowIntent) -> str:
@@ -243,6 +268,8 @@ def validate_result(
     result: OrchestrationResult,
     context: AgentExecutionContext,
     plan: OrchestrationPlan,
+    *,
+    require_decision_synthesis: bool = False,
 ) -> dict[str, str]:
     """Enforce the live smoke invariants without reproducing business logic."""
 
@@ -306,6 +333,18 @@ def validate_result(
 
     if result.status != AgentStatus.COMPLETED:
         raise AssertionError("Required hybrid orchestration did not complete")
+    authoritative = (result.risk, result.economics, result.policy, result.decision_synthesis)
+    if require_decision_synthesis and not all(
+        item is not None for item in authoritative
+    ):
+        raise AssertionError("Authoritative Risk/Economics/Policy decision state is absent")
+    if any(item is not None for item in authoritative):
+        if any(item is None for item in authoritative):
+            raise AssertionError("Authoritative decision state is incomplete")
+        if result.decision_synthesis.recommended_action != result.policy.action:
+            raise AssertionError("Decision synthesis altered the Policy-v1 action")
+        if result.decision_synthesis.risk_score != result.risk.score:
+            raise AssertionError("Decision synthesis altered the Risk-v1 score")
 
     serialized = result.model_dump(mode="json")
     prohibited = _prohibited_paths(serialized)
@@ -347,8 +386,7 @@ async def run(
         print_unavailable_preflight(args.intent, context)
         return None
 
-    config = AgentConfig.from_env()
-    config.validate_for_live_model()
+    config = bootstrap_vertex_ai(args)
     repository = BigQueryIntelligenceRepository(IntelligenceConfig.from_env())
     intelligence = ReturnIntelligenceService(repository)
     bridge = MCPToolBridge.from_returnguard_tools(ReturnGuardMCPTools(intelligence))
@@ -367,7 +405,11 @@ async def run(
         diagnostics.orchestrator_state = "started"
         diagnostics.agents_selected = list(plan.agents_selected)
         diagnostics.agents_skipped = dict(plan.agents_skipped)
-    result = await HybridOrchestrator(bridge, config).execute(
+    result = await HybridOrchestrator(
+        bridge,
+        config,
+        policy_service=ReturnPolicyService(intelligence),
+    ).execute(
         plan,
         context,
         workflow_request=workflow_request(args.intent),
@@ -378,7 +420,9 @@ async def run(
         diagnostics.agents_selected = list(result.agents_selected)
         diagnostics.agents_executed = list(result.agents_executed)
         diagnostics.agents_skipped = dict(result.agents_skipped)
-    checks = validate_result(result, context, plan)
+    checks = validate_result(
+        result, context, plan, require_decision_synthesis=True
+    )
 
     print("RETURNGUARD ORCHESTRATOR LIVE SMOKE: PASS")
     print(f"Return: {result.return_id}")
@@ -396,6 +440,13 @@ async def run(
     print(f"\nGrounded MCP evidence: {checks['grounded']}")
     print("Structured OrchestrationPlan: PASS")
     print(f"Structured OrchestrationResult: {checks['structured']}")
+    print("Authoritative Risk/Economics/Policy: PASS")
+    print("Protected DecisionSynthesisResult: PASS")
+    print(
+        "Decision: "
+        f"{result.decision_synthesis.recommended_action.value} "
+        f"({result.decision_synthesis.matched_policy_rule})"
+    )
     print(f"Prohibited-field check: {checks['prohibited']}")
     print("BigQuery writes: 0")
     return result

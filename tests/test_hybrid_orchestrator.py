@@ -154,10 +154,7 @@ class HybridOrchestratorTests(unittest.IsolatedAsyncioTestCase):
         risk = plan_orchestration(
             WorkflowIntent.RISK_POLICY_DECISION, CONTEXT
         )
-        self.assertEqual(
-            {item.capability for item in risk.missing_capabilities},
-            {"deterministic_risk", "decision_policy"},
-        )
+        self.assertEqual(risk.missing_capabilities, [])
         self.assertNotIn("decision_policy_agent", risk.agents_selected)
 
     async def test_each_planned_specialist_runs_once_then_gemini_synthesis(self):

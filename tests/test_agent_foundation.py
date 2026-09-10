@@ -292,10 +292,7 @@ class AgentFoundationTests(unittest.IsolatedAsyncioTestCase):
         vision = plan_orchestration(WorkflowIntent.VISION_REVIEW, CONTEXT)
         self.assertEqual(vision.missing_capabilities[0].capability, "vision")
         risk = plan_orchestration(WorkflowIntent.RISK_POLICY_DECISION, CONTEXT)
-        self.assertEqual(
-            {item.capability for item in risk.missing_capabilities},
-            {"deterministic_risk", "decision_policy"},
-        )
+        self.assertEqual(risk.missing_capabilities, [])
 
     async def test_real_adk_orchestrator_and_dynamic_copilot_are_constructed(self):
         backend = FakeProtocolBackend()

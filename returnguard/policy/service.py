@@ -361,6 +361,25 @@ class ReturnPolicyService:
         )
         return risk, policy
 
+    def evaluate_with_economics(
+        self,
+        return_id: str,
+        assessment_at: datetime | None = None,
+        *,
+        assessment_id: str | None = None,
+        inspection_is_meaningful_next_step: bool = True,
+        return_reason: ReturnReasonInput | None = None,
+    ) -> tuple[RiskAssessment, PolicyEvaluation, ReturnEconomics]:
+        """Return the authoritative no-write state used for decision synthesis."""
+
+        return self._evaluate_once(
+            return_id,
+            assessment_at,
+            assessment_id=assessment_id,
+            inspection_is_meaningful_next_step=inspection_is_meaningful_next_step,
+            return_reason=return_reason,
+        )
+
     def evaluate_and_record(
         self,
         return_id: str,

@@ -47,6 +47,13 @@ _URI_PATTERN = re.compile(r"(?i)\b(?:gs|https?)://\S+")
 _IPV4_PATTERN = re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)")
 _LONG_HEX_PATTERN = re.compile(r"(?i)\b[0-9a-f]{24,}\b")
 _CONTROLLED_SERIAL_PATTERN = re.compile(r"\bRG-[A-Za-z0-9-]+\b")
+_PROHIBITED_STRUCTURED_KEYS = frozenset({
+    "expected_serial", "returned_serial", "image_uri", "reference_image_uri",
+    "linked_user_id", "linked_user_ids", "network_identifier",
+    "network_identifiers", "ip_address", "session_id", "device_id",
+    "device_identifier", "fraud_labels", "scenario_id", "reason_details",
+    "risk_event_id", "economics_event_id", "policy_event_id",
+})
 
 
 def sanitize_readable_text(value: Any) -> str:
@@ -60,6 +67,24 @@ def sanitize_readable_text(value: Any) -> str:
     text = _IPV4_PATTERN.sub("[redacted ip]", text)
     text = _LONG_HEX_PATTERN.sub("[redacted identifier]", text)
     return _CONTROLLED_SERIAL_PATTERN.sub("[redacted serial]", text)
+
+
+def sanitize_structured_value(value: Any) -> Any:
+    """Recursively remove prohibited keys and sanitize model-authored strings."""
+
+    if isinstance(value, dict):
+        return {
+            str(key): sanitize_structured_value(child)
+            for key, child in value.items()
+            if str(key).casefold() not in _PROHIBITED_STRUCTURED_KEYS
+        }
+    if isinstance(value, list):
+        return [sanitize_structured_value(child) for child in value]
+    if isinstance(value, tuple):
+        return [sanitize_structured_value(child) for child in value]
+    if isinstance(value, str):
+        return sanitize_readable_text(value)
+    return value
 
 
 def _human_log(logger: logging.Logger, lines: list[str]) -> None:
@@ -221,6 +246,41 @@ def log_policy_summary(logger: logging.Logger, result: Any) -> None:
     else:
         _append_values(lines, "rationale", list(result.rationale))
     _append_values(lines, "limitations", list(getattr(result, "limitations", [])))
+    _human_log(logger, lines)
+
+
+def log_decision_synthesis_summary(logger: logging.Logger, result: Any) -> None:
+    """Log a protected DecisionSynthesisResult without raw model/tool payloads."""
+
+    score = "UNDETERMINED" if result.risk_score is None else result.risk_score
+    network = getattr(result, "network_context", None)
+    lines = [
+        "[DECISION SYNTHESIS]",
+        f"  return: {sanitize_readable_text(result.return_id)}",
+        f"  assessment: {sanitize_readable_text(result.assessment_id or 'not supplied')}",
+        f"  risk: {score} / {getattr(result.risk_band, 'value', result.risk_band)}",
+        f"  coverage: {getattr(result.risk_coverage, 'value', result.risk_coverage)}",
+        f"  matched policy rule: {sanitize_readable_text(result.matched_policy_rule)}",
+        f"  action: {getattr(result.recommended_action, 'value', result.recommended_action)}",
+        f"  summary: {sanitize_readable_text(result.decision_summary)}",
+    ]
+    _append_values(lines, "strongest evidence", list(result.strongest_evidence))
+    _append_values(lines, "mitigating context", list(result.mitigating_context))
+    if network is not None and network.summary:
+        _append_values(lines, "network context", [
+            network.summary,
+            *([network.merchant_explanation] if network.merchant_explanation else []),
+        ])
+    economics = result.economics_summary
+    _append_values(lines, "economics", [
+        f"item value: {economics.current_item_value}",
+        f"operational cost: {economics.total_operational_cost}",
+        f"recovery value: {economics.recovery_value}",
+        f"net return cost: {economics.estimated_net_return_cost}",
+    ])
+    _append_values(lines, "policy reasoning", list(result.policy_reasoning))
+    _append_values(lines, "limitations", list(result.limitations))
+    _append_values(lines, "specialists used", list(result.specialists_used))
     _human_log(logger, lines)
 
 

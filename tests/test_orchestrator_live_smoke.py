@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import unittest
+import os
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from pydantic import ValidationError
 
@@ -18,6 +20,7 @@ from returnguard.agents import (
 )
 from scripts.diagnostics.smoke_test_orchestrator_live import (
     ExecutionDiagnostics,
+    bootstrap_vertex_ai,
     parse_args,
     safe_validation_errors,
     validate_plan,
@@ -65,6 +68,15 @@ class OrchestratorLiveSmokeHelperTests(unittest.TestCase):
         self.assertEqual(args.return_id, "RTN-M08-002")
         self.assertEqual(args.intent, WorkflowIntent.INSPECTION_REVIEW)
         self.assertTrue(args.inspection_available)
+
+    def test_live_smoke_bootstraps_known_vertex_configuration(self):
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args([])
+            config = bootstrap_vertex_ai(args)
+            self.assertTrue(config.use_vertex_ai)
+            self.assertEqual(config.google_cloud_project, "return-guard-506407")
+            self.assertEqual(config.google_cloud_location, "us-central1")
+            self.assertEqual(os.environ["GOOGLE_GENAI_USE_VERTEXAI"], "true")
 
     def test_inspection_request_requires_real_orchestrator_delegation(self):
         prompt = workflow_request(WorkflowIntent.INSPECTION_REVIEW)

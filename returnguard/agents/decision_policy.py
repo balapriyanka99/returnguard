@@ -7,10 +7,10 @@ def unavailable_decision_policy_result(context: AgentExecutionContext) -> Specia
     return SpecialistResult(
         agent_name="decision_policy_agent", return_id=context.return_id,
         assessment_at=context.assessment_at, status=AgentStatus.UNAVAILABLE,
-        summary="Decision and policy reasoning is unavailable until deterministic dependencies exist.",
+        summary="A separate Decision & Policy specialist agent is not implemented.",
         limitations=[
-            "The deterministic Risk Engine is not implemented.",
-            "The policy service and approved policy rules are not implemented.",
+            "Risk-v1 and Policy-v1 remain authoritative deterministic services.",
+            "Decision synthesis explains their results but does not replace them.",
         ],
         confidence=AgentConfidence.UNAVAILABLE, trace_id=context.trace_id,
         assessment_id=context.assessment_id,
