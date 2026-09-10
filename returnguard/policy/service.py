@@ -6,6 +6,8 @@ import logging
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 
+from returnguard.economics.models import EconomicsAssessment
+from returnguard.economics.repository import EconomicsAssessmentRepository
 from returnguard.intelligence import ReturnIntelligenceService
 from returnguard.intelligence.models import EvidenceRecord, InspectionRecord, ReturnEconomics
 from returnguard.observability import logged_operation, log_policy_summary
@@ -22,6 +24,7 @@ from .models import (
     ReturnReasonGroup,
     ReturnReasonInput,
 )
+from .repository import PolicyAssessmentRepository
 
 
 logger = logging.getLogger(__name__)
@@ -331,10 +334,14 @@ class ReturnPolicyService:
         intelligence: ReturnIntelligenceService,
         risk: ReturnRiskService | None = None,
         policy: PolicyV1Service | None = None,
+        economics_repository: EconomicsAssessmentRepository | None = None,
+        policy_repository: PolicyAssessmentRepository | None = None,
     ) -> None:
         self.intelligence = intelligence
         self.risk = risk or ReturnRiskService(intelligence)
         self.policy = policy or PolicyV1Service()
+        self.economics_repository = economics_repository
+        self.policy_repository = policy_repository
 
     def evaluate(
         self,
@@ -345,6 +352,57 @@ class ReturnPolicyService:
         inspection_is_meaningful_next_step: bool = True,
         return_reason: ReturnReasonInput | None = None,
     ) -> tuple[RiskAssessment, PolicyEvaluation]:
+        risk, policy, _ = self._evaluate_once(
+            return_id,
+            assessment_at,
+            assessment_id=assessment_id,
+            inspection_is_meaningful_next_step=inspection_is_meaningful_next_step,
+            return_reason=return_reason,
+        )
+        return risk, policy
+
+    def evaluate_and_record(
+        self,
+        return_id: str,
+        assessment_at: datetime | None = None,
+        *,
+        assessment_id: str | None = None,
+        inspection_is_meaningful_next_step: bool = True,
+        return_reason: ReturnReasonInput | None = None,
+    ) -> tuple[RiskAssessment, PolicyEvaluation, EconomicsAssessment]:
+        """Evaluate once and append immutable economics and policy snapshots."""
+
+        if self.economics_repository is None or self.policy_repository is None:
+            raise RuntimeError(
+                "EconomicsAssessmentRepository and PolicyAssessmentRepository "
+                "are required to persist policy assessments"
+            )
+        risk, policy, economics = self._evaluate_once(
+            return_id,
+            assessment_at,
+            assessment_id=assessment_id,
+            inspection_is_meaningful_next_step=inspection_is_meaningful_next_step,
+            return_reason=return_reason,
+        )
+        economics_assessment = EconomicsAssessment.from_result(
+            return_id=return_id,
+            assessment_id=risk.assessment_id,
+            assessment_at=risk.assessment_at,
+            result=economics,
+        )
+        self.economics_repository.append(economics_assessment)
+        self.policy_repository.append(policy)
+        return risk, policy, economics_assessment
+
+    def _evaluate_once(
+        self,
+        return_id: str,
+        assessment_at: datetime | None,
+        *,
+        assessment_id: str | None,
+        inspection_is_meaningful_next_step: bool,
+        return_reason: ReturnReasonInput | None,
+    ) -> tuple[RiskAssessment, PolicyEvaluation, ReturnEconomics]:
         risk = self.risk.assess(
             return_id, assessment_at, assessment_id=assessment_id
         )
@@ -369,4 +427,4 @@ class ReturnPolicyService:
             normalized_reason=normalized_reason,
             customer_total_items=customer.total_items,
         )
-        return risk, policy
+        return risk, policy, economics

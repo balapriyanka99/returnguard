@@ -16,11 +16,17 @@ from .service import (
     normalize_return_reason,
     return_reason_group,
 )
+from .repository import (
+    BigQueryPolicyAssessmentRepository,
+    PolicyAssessmentRepository,
+    policy_event_id,
+)
 
 __all__ = [
-    "NormalizedReturnReason", "PolicyAction", "PolicyEconomicsSummary",
+    "BigQueryPolicyAssessmentRepository", "NormalizedReturnReason",
+    "PolicyAction", "PolicyAssessmentRepository", "PolicyEconomicsSummary",
     "PolicyEvaluation", "PolicyPricingSummary", "PolicyV1Service",
     "ProductMitigationEffect", "ReturnPolicyService",
     "ReturnReasonGroup", "ReturnReasonInput", "normalize_return_reason",
-    "return_reason_group",
+    "policy_event_id", "return_reason_group",
 ]
