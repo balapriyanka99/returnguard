@@ -47,6 +47,10 @@ _URI_PATTERN = re.compile(r"(?i)\b(?:gs|https?)://\S+")
 _IPV4_PATTERN = re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)")
 _LONG_HEX_PATTERN = re.compile(r"(?i)\b[0-9a-f]{24,}\b")
 _CONTROLLED_SERIAL_PATTERN = re.compile(r"\bRG-[A-Za-z0-9-]+\b")
+_LABELED_SECRET_PATTERN = re.compile(
+    r"(?i)\b(?:expected_serial|returned_serial|image_uri|reference_image_uri|"
+    r"ip_address|session_id|device_id|network_identifier|linked_user_id)\b\s*[:=]\s*[^\s,;]+"
+)
 _PROHIBITED_STRUCTURED_KEYS = frozenset({
     "expected_serial", "returned_serial", "image_uri", "reference_image_uri",
     "linked_user_id", "linked_user_ids", "network_identifier",
@@ -85,6 +89,17 @@ def sanitize_structured_value(value: Any) -> Any:
     if isinstance(value, str):
         return sanitize_readable_text(value)
     return value
+
+
+def sanitize_merchant_text(value: Any) -> str:
+    """Preserve safe derived prose while removing concrete raw values."""
+
+    text = str(value).replace("\r", " ").replace("\n", " ").strip()
+    text = _LABELED_SECRET_PATTERN.sub("[redacted sensitive value]", text)
+    text = _URI_PATTERN.sub("[redacted uri]", text)
+    text = _IPV4_PATTERN.sub("[redacted ip]", text)
+    text = _LONG_HEX_PATTERN.sub("[redacted identifier]", text)
+    return _CONTROLLED_SERIAL_PATTERN.sub("[redacted serial]", text)
 
 
 def _human_log(logger: logging.Logger, lines: list[str]) -> None:

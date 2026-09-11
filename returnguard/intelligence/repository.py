@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class IntelligenceRepository(Protocol):
+    def list_returns(self, limit: int = 50) -> list[dict[str, Any]]: ...
     def get_return(self, return_id: str) -> dict[str, Any] | None: ...
     def get_customer_history(self, user_id: int, product_id: int, category: str | None, assessment_at: datetime, current_order_item_id: int) -> dict[str, Any]: ...
     def get_product_history(self, product_id: int, assessment_at: datetime, current_order_item_id: int) -> dict[str, Any]: ...
@@ -34,6 +35,41 @@ class BigQueryIntelligenceRepository:
     @staticmethod
     def _row(row: Any) -> dict[str, Any]:
         return dict(row.items())
+
+    def list_returns(self, limit: int = 50) -> list[dict[str, Any]]:
+        limit = max(1, min(int(limit), 100))
+        rg = self.config.returnguard_dataset
+        sql = f"""
+        WITH latest_risk AS (
+          SELECT return_id, score, band
+          FROM `{rg}.risk_events`
+          QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY return_id ORDER BY assessment_at DESC
+          ) = 1
+        ), latest_decision AS (
+          SELECT return_id, recommended_action
+          FROM `{rg}.return_decisions`
+          QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY return_id ORDER BY assessment_at DESC
+          ) = 1
+        )
+        SELECT r.return_id, r.scenario_id, r.order_id, r.order_item_id, r.user_id, r.product_id,
+               r.status, r.reason, r.requested_at, r.anchor_sale_price,
+               r.assessment_at, r.source_type, p.name AS product_name,
+               p.category AS product_category, risk.score AS risk_score,
+               risk.band AS risk_band, decision.recommended_action
+        FROM `{rg}.return_requests` r
+        LEFT JOIN `{self.config.source_products}` p ON p.id = r.product_id
+        LEFT JOIN latest_risk risk USING (return_id)
+        LEFT JOIN latest_decision decision USING (return_id)
+        ORDER BY requested_at DESC, return_id
+        LIMIT @limit
+        """
+        return self._all(
+            "list_returns", sql,
+            [bigquery.ScalarQueryParameter("limit", "INT64", limit)],
+            source_role="returnguard_active",
+        )
 
     def _one(
         self,

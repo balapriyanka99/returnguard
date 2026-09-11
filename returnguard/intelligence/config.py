@@ -18,6 +18,8 @@ class IntelligenceConfig:
     source_dataset_id: str = "returnguard"
     source_order_items_table: str = "source_order_items_snapshot"
     source_products_table: str = "source_products_snapshot"
+    source_users_table: str = "source_users_snapshot"
+    source_orders_table: str = "source_orders_snapshot"
 
     @classmethod
     def from_env(cls) -> "IntelligenceConfig":
@@ -32,12 +34,16 @@ class IntelligenceConfig:
             source_products_table=os.getenv(
                 "RETURNGUARD_SOURCE_PRODUCTS_TABLE", cls.source_products_table
             ),
+            source_users_table=os.getenv("RETURNGUARD_SOURCE_USERS_TABLE", cls.source_users_table),
+            source_orders_table=os.getenv("RETURNGUARD_SOURCE_ORDERS_TABLE", cls.source_orders_table),
         )
         for name, value in (
             ("dataset_id", config.dataset_id),
             ("source_dataset_id", config.source_dataset_id),
             ("source_order_items_table", config.source_order_items_table),
             ("source_products_table", config.source_products_table),
+            ("source_users_table", config.source_users_table),
+            ("source_orders_table", config.source_orders_table),
         ):
             if not _BQ_IDENTIFIER.fullmatch(value):
                 raise ValueError(f"Invalid BigQuery {name}: {value!r}")
@@ -58,3 +64,11 @@ class IntelligenceConfig:
     @property
     def source_products(self) -> str:
         return f"{self.source_dataset}.{self.source_products_table}"
+
+    @property
+    def source_users(self) -> str:
+        return f"{self.source_dataset}.{self.source_users_table}"
+
+    @property
+    def source_orders(self) -> str:
+        return f"{self.source_dataset}.{self.source_orders_table}"
